@@ -300,7 +300,13 @@ export const DailyRecordForm: React.FC = () => {
       ...patch,
     }));
   };
-
+  
+  // 入力内容を初期状態に戻す（latestRecord も useEffect 経由で更新される）
+  const handleClearForm = () => {
+    const initial = createInitialRecord();
+    setRecord(initial);
+    // history は触らない（履歴はそのまま残す）
+  };
   // 生成されるメッセージ（毎回最新の record から生成）
   const previewText = formatDailyRecord(record);
 
@@ -352,6 +358,14 @@ export const DailyRecordForm: React.FC = () => {
       {/* ① 入力エリア */}
       <section style={{ marginBottom: "16px" }}>
         <h2>入力エリア</h2>
+
+        {/* 入力クリアボタン（一番上に配置） */}
+        <div style={{ margin: "8px 0 16px" }}>
+          <button type="button" onClick={handleClearForm}>
+            入力内容をクリア
+          </button>
+        </div>
+
         {/* 日付 */}
         <DateSection record={record} onChange={handleRecordChange} />
         {/* 体重 */}
