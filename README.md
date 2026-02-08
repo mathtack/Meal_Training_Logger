@@ -147,9 +147,15 @@ Data Layer
 
 ## ✨ 7. Author
 
-- Product Owner: **ごうけん**  
-- Scrum Master / Dev: **ひな**  
-- Dev: **ごうけん**
+- Product Owner / Tech Lead / Dev.: **ごうけん**  
+- Scrum Master / Tech Adviser / Dev: **ひな（ChatGPT）**  
+- Code Reviewer / Debug Assistant: **みな（ChatGPT Codex）**  
 
 ---
 
+## 🛠️ 8. Changelog
+
+- v1.0.0（2026-02-08）  
+  基本入力UI・DailyRecord構造化・定型文生成ロジック・最新記録(localStorage)同期・履歴保存機能を実装したMVP版。
+   
+---

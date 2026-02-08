@@ -1,4 +1,4 @@
-import type { DailyRecord, MealRecord, ExerciseRecord } from "./DailyRecord";
+import type { DailyRecord, ExerciseRecord } from "./DailyRecord";
 
 function formatHeaderTitle(dateStr: string): string {
   // dateStr が "2026-02-06" みたいな形式前提
@@ -50,97 +50,87 @@ function formatExercisesForReport(record: DailyRecord): string {
   return lines.join("\n");
 }
 
-
+// --- 食事フォーマットここから ---
+// --- 食事フォーマット ---
 function formatMealsForReport(record: DailyRecord): string {
-  const meals: MealRecord[] = record.meals ?? [];
+  const mealLines: string[] = [];
 
-  if (meals.length === 0) {
-    return "（食事の記録なし）";
-  }
+  const mealByTime = (time: string) => record.meals.find((m) => m.time === time);
 
-  // 表示順
-  const order = ["朝", "昼", "夜", "間食"];
+  // 朝・昼・夜は必ず出す
+  (['朝', '昼', '夜'] as const).forEach((time) => {
+    const meal = mealByTime(time);
+    const memo = meal?.memo?.trim();
+    const eatenAt = meal?.eatenAt?.trim(); // 例: "05:20" or "5:20"
 
-  // timeごとにグルーピング
-  const grouped: Record<string, MealRecord[]> = {};
-
-  for (const meal of meals) {
-    const key = meal.time?.trim() || "その他";
-
-    if (!grouped[key]) {
-      grouped[key] = [];
-    }
-    grouped[key].push(meal);
-  }
-
-  const lines: string[] = [];
-
-  // ① 朝・昼・夜・間食（メイン）
-  for (const label of order) {
-    const group = grouped[label];
-    if (!group || group.length === 0) continue;
-
-    const memos = group
-      .map((m) => m.memo?.trim())
-      .filter((m): m is string => !!m && m.length > 0);
-
-    if (memos.length === 0) continue;
-
-    // Step2-Lite を微調整：
-    // 「（7:55頃）」ではなく「 7:55頃」にする
-    let timeText = "";
-    const firstEatenAt = group[0].eatenAt?.trim();
-
-    if (firstEatenAt && /^\d{1,2}:\d{2}$/.test(firstEatenAt)) {
-      const noZero = firstEatenAt.replace(/^0/, "");
-      // ※半角スペース＋「頃」だけにする
-      timeText = ` ${noZero}頃`;
+    let timePart = '';
+    if (eatenAt) {
+      const [hh, mm] = eatenAt.split(":");
+      if (hh !== undefined && mm !== undefined && !Number.isNaN(Number(hh))) {
+        const hour = String(Number(hh));
+        timePart = `${hour}:${mm}頃：`;
+      } else {
+        timePart = `${eatenAt}頃：`;
+      }
     }
 
-    // 例：朝 7:55頃：エビレタスチャーハン
-    lines.push(`${label}${timeText}：${memos.join("、")}`);
+    if (memo && memo.length > 0) {
+      mealLines.push(`[${time}] ${timePart}${memo}`);
+    } else {
+      mealLines.push(`[${time}] （記録なし）`);
+    }
+  });
+
+  // 間食はメモがあれば出す
+  const snack = mealByTime('間食');
+  const snackMemo = snack?.memo?.trim();
+  const snackAt = snack?.eatenAt?.trim();
+  let snackTimePart = '';
+  if (snackAt) {
+    const [hh, mm] = snackAt.split(":");
+    if (hh !== undefined && mm !== undefined && !Number.isNaN(Number(hh))) {
+      const hour = String(Number(hh));
+      snackTimePart = `${hour}:${mm}頃：`;
+    } else {
+      snackTimePart = `${snackAt}頃：`;
+    }
+  }
+  if (snackMemo && snackMemo.length > 0) {
+    mealLines.push(`[間食] ${snackTimePart}${snackMemo}`);
   }
 
-  // ② 朝・昼・夜・間食以外（もしあれば）
-  for (const [label, group] of Object.entries(grouped)) {
-    if (order.includes(label)) continue;
-
-    const memos = group
-      .map((m) => m.memo?.trim())
-      .filter((m): m is string => !!m && m.length > 0);
-
-    if (memos.length === 0) continue;
-
-    // ここは時間表示ナシでOK
-    lines.push(`${label}：${memos.join("、")}`);
+  if (mealLines.length === 0) {
+    return '（記録なし）';
   }
-
-  if (lines.length === 0) {
-    return "（食事の記録なし）";
-  }
-
-  return lines.join("\n");
+  return mealLines.join('\n');
 }
+// --- 食事フォーマットここまで ---
 
 function formatWeightLine(
   label: "朝" | "夜",
   weight?: number,
   time?: string
-): string | null {
-  if (weight === undefined) return null;
+): string {
+  const prefix = `[${label}] `;
+
+  // weight が未入力 or 変な値 → （記録なし）
+  if (typeof weight !== "number" || Number.isNaN(weight)) {
+    return `${prefix}（記録なし）`;
+  }
 
   let trimmedTime = time?.trim();
 
   if (trimmedTime) {
-    // ← ここでフォーマット調整（"07:00" → "7:00"）
+    // "07:00" → "7:00" みたいに整形
     const [hh, mm] = trimmedTime.split(":");
     const hour = String(Number(hh)); // "07" → 7 → "7"
     const formattedTime = `${hour}:${mm}`;
 
-    return `${label} ${formattedTime}頃：${weight}kg`;
+    return `${prefix}${formattedTime}頃：${weight}kg`;
   }
-  // 時間がないときは今まで通り
-  return `${label}：${weight}kg`;
+
+  // 時間がないときは「[朝] 72.5kg」だけ
+  return `${prefix}${weight}kg`;
 }
 
 
@@ -165,12 +155,10 @@ export function formatDailyRecord(record: DailyRecord): string {
     record.nightWeightTime
   );
 
-  if (morningLine) {
-    lines.push(morningLine);
-  }
-  if (nightLine) {
-    lines.push(nightLine);
-  }
+ // ここは常に2行とも出す
+lines.push(morningLine);
+lines.push(nightLine);
+
 // いったん非表示
   // 食事件数
   // lines.push(`食事：${record.meals.length}件`);

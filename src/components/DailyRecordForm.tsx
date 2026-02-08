@@ -2,6 +2,19 @@ import React, { useState, useEffect } from "react";
 import type { DailyRecord, MealRecord, ExerciseRecord } from "../domain/DailyRecord";
 import { formatDailyRecord } from "../domain/formatDailyRecord"; // ← これ追加
 
+import type { HistoryRecord } from "../domain/history";
+import {
+  buildExportPayload,
+  mergeHistory,
+  parseAndValidateExportPayload,
+} from "../domain/history";
+import {
+  loadHistory,
+  saveHistory,
+  loadLatestRecord,
+  saveLatestRecord,
+} from "../data/localStorageHistory";
+
 // 各セクションコンポーネントで共通して使うProps
 export type DailyRecordSectionProps = {
   record: DailyRecord;
@@ -15,11 +28,14 @@ export const DateSection: React.FC<DailyRecordSectionProps> = ({
   return (
     <section>
       <h2>日付</h2>
-      <input
-        type="date"
-        value={record.date}
-        onChange={(e) => onChange({ date: e.target.value })}
-      />
+      <div>
+        <span style={{ color: "red", marginRight: 4 }}>*</span>
+        <input
+          type="date"
+          value={record.date}
+          onChange={(e) => onChange({ date: e.target.value })}
+        />
+      </div>
     </section>
   );
 };
@@ -28,6 +44,12 @@ export const WeightSection: React.FC<DailyRecordSectionProps> = ({
   record,
   onChange,
 }) => {
+  // 体重の値が有効か判定（10～999、またはundefined）
+  const isValidWeightValue = (value?: number): boolean => {
+    if (value === undefined) return true; // 空は有効
+    return value >= 10 && value <= 999;
+  };
+
   // 朝 / 夜 どちらの体重かを渡して使う小さなハンドラ
   const handleWeightInput =
     (field: "morningWeight" | "nightWeight") =>
@@ -67,6 +89,11 @@ export const WeightSection: React.FC<DailyRecordSectionProps> = ({
               value={record.morningWeight ?? ""}
               onChange={handleWeightInput("morningWeight")}
             />
+            {record.morningWeight !== undefined && !isValidWeightValue(record.morningWeight) && (
+              <p style={{ color: "red", fontSize: "0.8rem", marginTop: 4 }}>
+                体重は2〜3桁の数値（10〜999）のみ入力できます
+              </p>
+            )}
           </label>
         </div>
       </div>
@@ -92,6 +119,11 @@ export const WeightSection: React.FC<DailyRecordSectionProps> = ({
               value={record.nightWeight ?? ""}
               onChange={handleWeightInput("nightWeight")}
             />
+            {record.nightWeight !== undefined && !isValidWeightValue(record.nightWeight) && (
+              <p style={{ color: "red", fontSize: "0.8rem", marginTop: 4 }}>
+                体重は2〜3桁の数値（10〜999）のみ入力できます
+              </p>
+            )}
           </label>
         </div>
       </div>
@@ -150,6 +182,7 @@ export const MealsSection: React.FC<DailyRecordSectionProps> = ({
                 onChange={(e) =>
                   updateMeal(index, { memo: e.target.value })
                 }
+                placeholder="食べた内容は、で区切る。改行はしない"
               />
             </label>
           </div>
@@ -200,7 +233,7 @@ export const ExercisesSection: React.FC<DailyRecordSectionProps> = ({
           運動メモ：
           <br />
           <textarea
-            rows={3}
+            rows={6}
             style={{ width: "100%" }}
             value={currentMemo}
             onChange={handleExerciseMemoChange}
@@ -224,14 +257,6 @@ export const ConditionSection: React.FC<DailyRecordSectionProps> = () => {
   );
 };
 
-const STORAGE_KEY = "meal-training-logger:latestRecord";
-const HISTORY_KEY = "meal-training-logger:history";
-
-// 履歴用のレコード型（DailyRecord + 保存タイムスタンプ）
-type HistoryRecord = DailyRecord & {
-  savedAt: string; // ISO文字列 "2026-02-09T12:34:56.789Z" みたいなやつ
-};
-
 const createInitialMeals = (): MealRecord[] => [
   { time: "朝", memo: "" },
   { time: "昼", memo: "" },
@@ -251,47 +276,51 @@ const createInitialRecord = (): DailyRecord => ({
 
 export const DailyRecordForm: React.FC = () => {
   const [record, setRecord] = useState<DailyRecord>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (!saved) {
-        // 保存がまだないとき → 通常の初期値
-        return createInitialRecord();
-      }
-  
-      const parsed = JSON.parse(saved) as Partial<DailyRecord>;
-      const base = createInitialRecord();
+    const base = createInitialRecord();
+    const latest = loadLatestRecord();
 
-      // localStorage の値を優先しつつ、足りないとこは base で補完
-      return {
-        ...base,
-        ...parsed,
-        meals: parsed.meals ?? base.meals,
-        exercises: parsed.exercises ?? base.exercises,
-      };
-    } catch (e) {
-      console.error("Failed to load record from localStorage", e);
-      return createInitialRecord();
+    if (!latest) {
+      return base;
     }
+
+    // base で不足項目を補完しつつ、latest を優先
+    return {
+      ...base,
+      ...latest,
+      // meals が空配列だったりしたときの保険
+      meals: latest.meals && latest.meals.length > 0 ? latest.meals : base.meals,
+    };
   });
+
+  // フォーム内に追加（コンポーネントの外じゃなくて中にね！）
+  const isValidWeightValue = (weight?: number): boolean => {
+    if (weight === undefined || weight === null) {
+      // 未入力はOK（「記録なし」扱いにするため）
+      return true;
+    }
+    // 2〜3桁のみ許容 → 10〜999
+    return weight >= 10 && weight <= 999;
+  };
+
+  const isDateFilled = record.date.trim() !== "";
+
+  const areWeightsValid =
+    isValidWeightValue(record.morningWeight) &&
+    isValidWeightValue(record.nightWeight);
+
+  // 「保存・コピーしてもいい状態か？」
+  const canSaveOrCopy = isDateFilled && areWeightsValid;
 
   const [history, setHistory] = useState<HistoryRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem(HISTORY_KEY);
-      if (!saved) return [];
-      const parsed = JSON.parse(saved) as HistoryRecord[];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      console.error("Failed to load history from localStorage", e);
-      return [];
-    }
+    return loadHistory();
   });
 
+  const [exportJson, setExportJson] = useState<string>("");
+  const [importJson, setImportJson] = useState<string>("");
+  const [importError, setImportError] = useState<string | null>(null);
+
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
-    } catch (e) {
-      console.error("Failed to save record to localStorage", e);
-    }
+    saveLatestRecord(record);
   }, [record]);
 
   const handleRecordChange = (patch: Partial<DailyRecord>) => {
@@ -310,10 +339,6 @@ export const DailyRecordForm: React.FC = () => {
   // 生成されるメッセージ（毎回最新の record から生成）
   const previewText = formatDailyRecord(record);
 
-
-
-
-
   // 現在の record を履歴に保存する共通関数
   const saveCurrentToHistory = () => {
     const entry: HistoryRecord = {
@@ -322,18 +347,63 @@ export const DailyRecordForm: React.FC = () => {
     };
 
     setHistory((prev) => {
-      // ★ 同じ日付(date)の履歴は消してから、新しいのを先頭に入れる
+      // 同じ日付(date)の履歴は消してから、新しいのを先頭に入れる
       const filtered = prev.filter((h) => h.date !== record.date);
       const next = [entry, ...filtered];
 
-      try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-      } catch (e) {
-        console.error("Failed to save history to localStorage", e);
-      }
+      // localStorage 保存は専用関数経由
+      saveHistory(next);
 
       return next;
     });
+  };
+
+  // エクスポートJSONを生成する
+  const handleGenerateExportJson = () => {
+    const payload = buildExportPayload(history, record);
+    const json = JSON.stringify(payload, null, 2);
+    setExportJson(json);
+  };
+
+  // エクスポートJSONをクリップボードにコピー
+  const handleCopyExportJson = async () => {
+    if (!exportJson.trim()) {
+      alert("先にエクスポートJSONを生成してね");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(exportJson);
+      alert("エクスポートJSONをクリップボードにコピーしたよ👌");
+    } catch (e) {
+      console.error("Failed to copy export JSON", e);
+      alert("コピーに失敗しちゃった…ごめん🥲 手動で選択してコピーしてね");
+    }
+  };
+
+  // インポート処理
+  const handleImportJson = () => {
+    setImportError(null);
+
+    if (!importJson.trim()) {
+      setImportError("JSONが空みたい…まずはエクスポートしたJSONを貼り付けてね");
+      return;
+    }
+
+    try {
+      const payload = parseAndValidateExportPayload(importJson);
+      const merged = mergeHistory(history, payload.history);
+
+      setHistory(merged);
+      saveHistory(merged);
+
+      alert("インポートして履歴にマージしたよ🙆‍♀️");
+    } catch (e) {
+      console.error(e);
+      setImportError(
+        "JSONの形式が正しくないか、このアプリのエクスポートデータじゃないかも…",
+      );
+    }
   };
 
   // クリップボードにコピーするハンドラ
@@ -353,11 +423,6 @@ export const DailyRecordForm: React.FC = () => {
       console.error("コピーに失敗しました", err);
       alert("今日の記録は履歴に保存したけど、クリップボードコピーは失敗しちゃった…🥲");
     }
-  };
-
-  // 「今日の記録を履歴に保存」ボタン用
-  const handleSaveToHistory = () => {
-    saveCurrentToHistory();
   };
 
   const handleLoadFromHistory = (entry: HistoryRecord) => {
@@ -404,10 +469,11 @@ export const DailyRecordForm: React.FC = () => {
           <button
             type="button"
             onClick={handleCopyToClipboard}
-            disabled={!previewText.trim()}
+            disabled={!canSaveOrCopy}
           >
             クリップボードにコピー
           </button>
+
         </div>
 
         {/* 履歴セクション */}
@@ -415,7 +481,11 @@ export const DailyRecordForm: React.FC = () => {
           <h3>履歴</h3>
 
           <div style={{ marginBottom: "8px" }}>
-            <button type="button" onClick={handleSaveToHistory}>
+            <button
+              type="button"
+              onClick={saveCurrentToHistory}
+              disabled={!canSaveOrCopy}
+            >
               今日の記録を履歴に保存
             </button>
           </div>
@@ -467,6 +537,66 @@ export const DailyRecordForm: React.FC = () => {
                 );
               })}
             </ul>
+          )}
+        </div>
+      </section>
+
+      {/* ③ データのエクスポート / インポート */}
+      <section style={{ marginBottom: "24px" }}>
+        <h2>データのエクスポート / インポート</h2>
+
+        {/* エクスポート */}
+        <div style={{ marginBottom: "16px" }}>
+          <h3>エクスポート（スマホ → PCなど）</h3>
+          <p style={{ fontSize: "0.9rem" }}>
+            いまこの端末が持っている履歴（history）をJSONとして書き出すよ。<br />
+            スマホで生成して、メモアプリ経由でPCに送る、みたいな使い方を想定してる。
+          </p>
+          <button type="button" onClick={handleGenerateExportJson}>
+            エクスポートJSONを生成
+          </button>
+          <button
+            type="button"
+            onClick={handleCopyExportJson}
+            style={{ marginLeft: "8px" }}
+          >
+            JSONをコピー
+          </button>
+          <div style={{ marginTop: "8px" }}>
+            <textarea
+              rows={8}
+              style={{ width: "100%", fontFamily: "monospace" }}
+              value={exportJson}
+              readOnly
+              placeholder="ここにエクスポートJSONが表示されるよ"
+            />
+          </div>
+        </div>
+
+        {/* インポート */}
+        <div>
+          <h3>インポート（別端末の履歴を取り込む）</h3>
+          <p style={{ fontSize: "0.9rem" }}>
+            スマホ側でエクスポートしたJSONをここに貼り付けて、「インポート」を押すと、
+            この端末の履歴にマージされるよ。<br />
+            同じ日付がある場合は、保存日時（savedAt）が新しい方を自動採用する。
+          </p>
+          <textarea
+            rows={8}
+            style={{ width: "100%", fontFamily: "monospace" }}
+            value={importJson}
+            onChange={(e) => setImportJson(e.target.value)}
+            placeholder="ここにエクスポートJSONを貼り付けてね"
+          />
+          <div style={{ marginTop: "8px" }}>
+            <button type="button" onClick={handleImportJson}>
+              インポートして履歴にマージ
+            </button>
+          </div>
+          {importError && (
+            <p style={{ color: "red", marginTop: "4px", fontSize: "0.9rem" }}>
+              {importError}
+            </p>
           )}
         </div>
       </section>
