@@ -310,22 +310,12 @@ export const DailyRecordForm: React.FC = () => {
   // 生成されるメッセージ（毎回最新の record から生成）
   const previewText = formatDailyRecord(record);
 
-  // クリップボードにコピーするハンドラ
-  const handleCopyToClipboard = async () => {
-    const text = previewText.trim();
-    if (!text) return;
 
-    try {
-      await navigator.clipboard.writeText(text);
-      alert("クリップボードにコピーしたよ👌");
-    } catch (err) {
-      console.error("コピーに失敗しました", err);
-      alert("ごめん、コピーに失敗しちゃった…🥲");
-    }
-  };
 
-  // 履歴に保存するハンドラ
-  const handleSaveToHistory = () => {
+
+
+  // 現在の record を履歴に保存する共通関数
+  const saveCurrentToHistory = () => {
     const entry: HistoryRecord = {
       ...record,
       savedAt: new Date().toISOString(),
@@ -344,6 +334,30 @@ export const DailyRecordForm: React.FC = () => {
 
       return next;
     });
+  };
+
+  // クリップボードにコピーするハンドラ
+  // ＋ 履歴保存も同時にやる
+  const handleCopyToClipboard = async () => {
+    const text = previewText.trim();
+    if (!text) return;
+
+    // ① 先に履歴保存だけは必ずやる
+    saveCurrentToHistory();
+
+    // ② そのうえでコピーを試みる
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("クリップボードにコピーしたよ👌\n今日の記録も履歴に保存しておいたよ📒");
+    } catch (err) {
+      console.error("コピーに失敗しました", err);
+      alert("今日の記録は履歴に保存したけど、クリップボードコピーは失敗しちゃった…🥲");
+    }
+  };
+
+  // 「今日の記録を履歴に保存」ボタン用
+  const handleSaveToHistory = () => {
+    saveCurrentToHistory();
   };
 
   const handleLoadFromHistory = (entry: HistoryRecord) => {
