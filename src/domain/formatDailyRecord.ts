@@ -1,4 +1,5 @@
 import type { DailyRecord, ExerciseRecord } from "./DailyRecord";
+export type ExportTarget = "chatgpt" | "line" | "copilot";
 
 function formatHeaderTitle(dateStr: string): string {
   // dateStr が "2026-02-06" みたいな形式前提
@@ -133,8 +134,138 @@ function formatWeightLine(
   return `${prefix}${weight}kg`;
 }
 
+function formatConditionForReport(record: DailyRecord): string | null {
+  const lines: string[] = [];
 
-export function formatDailyRecord(record: DailyRecord): string {
+  const {
+    sleepDurationCategory,
+    sleepQuality,
+    waterIntake,
+    physicalCondition,
+    mood,
+    bowelMovement,
+  } = record as any; // ← 型名やプロパティ名はごうけんの定義に合わせてあとで直してOK
+
+  // どれも未入力ならコンディションセクション自体を出さない
+  if (
+    !sleepDurationCategory &&
+    !sleepQuality &&
+    !waterIntake &&
+    !physicalCondition &&
+    !mood &&
+    !bowelMovement
+  ) {
+    return null;
+  }
+
+  // 🧠 見出し
+  lines.push("🧠 コンディション");
+
+  // 🛌 睡眠
+  if (sleepDurationCategory || sleepQuality) {
+    const durationLabelMap: Record<string, string> = {
+      lt6h: "6時間未満",
+      h6to7: "6〜7時間",
+      gte7h: "7時間以上",
+    };
+
+    const qualityLabelMap: Record<string, string> = {
+      bad: "悪い",
+      normal: "普通",
+      good: "良い",
+    };
+
+    const parts: string[] = [];
+
+    if (sleepDurationCategory && durationLabelMap[sleepDurationCategory]) {
+      parts.push(durationLabelMap[sleepDurationCategory]);
+    }
+    if (sleepQuality && qualityLabelMap[sleepQuality]) {
+      parts.push(`質：${qualityLabelMap[sleepQuality]}`);
+    }
+
+    if (parts.length > 0) {
+      lines.push(`🛌睡眠：${parts.join(" / ")}`);
+    }
+  }
+
+  // 💧 水分
+  if (waterIntake) {
+    const waterLabelMap: Record<string, string> = {
+      lt1l: "1L未満",
+      l1to1_5: "1〜1.5L",
+      l1_5to2: "1.5〜2L",
+      gte2l: "2L以上",
+    };
+
+    const label = waterLabelMap[waterIntake];
+    if (label) {
+      lines.push(`💧水分：${label}`);
+    }
+  }
+
+  // 🔋 身体
+  if (physicalCondition) {
+    const physicalLabelMap: Record<string, string> = {
+      fine: "元気",
+      slightly_tired: "少し疲れ",
+      tired: "かなり疲れ",
+      exhausted: "強い疲労",
+    };
+
+    const label = physicalLabelMap[physicalCondition];
+    if (label) {
+      lines.push(`🔋身体：${label}`);
+    }
+  }
+
+  // 💭 気分
+  if (mood) {
+    const moodLabelMap: Record<string, string> = {
+      good: "良い",
+      normal: "普通",
+      bad: "悪い",
+      worst: "最悪",
+    };
+
+    const label = moodLabelMap[mood];
+    if (label) {
+      lines.push(`💭気分：${label}`);
+    }
+  }
+  // 🤤 空腹感
+  if (record.hungerLevel) {
+    const hungerLabelMap: Record<string, string> = {
+      none: "なし",
+      slight: "多少あり",
+      strong: "強くあり",
+    };
+
+    const label = hungerLabelMap[record.hungerLevel];
+    if (label) {
+      lines.push(`🤤空腹感：${label}`);
+    }
+  }
+
+  // 🚽 便通
+  if (bowelMovement) {
+    const bowelLabelMap: Record<string, string> = {
+      none: "出ない",
+      once: "1回",
+      twice: "2回",
+      three_or_more: "3回以上",
+    };
+
+    const label = bowelLabelMap[bowelMovement];
+    if (label) {
+      lines.push(`🚽便通：${label}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function formatDailyRecordForChatGPT(record: DailyRecord): string {
   const lines: string[] = [];
 
   // 🧾 タイトル行
@@ -159,6 +290,12 @@ export function formatDailyRecord(record: DailyRecord): string {
 lines.push(morningLine);
 lines.push(nightLine);
 
+  // ここに 🧠 コンディション を挿入
+  const conditionBlock = formatConditionForReport(record);
+  if (conditionBlock) {
+    lines.push("");             // 空行で区切る
+    lines.push(conditionBlock); // 複数行まとまったテキスト
+  }
 // いったん非表示
   // 食事件数
   // lines.push(`食事：${record.meals.length}件`);
@@ -180,4 +317,73 @@ lines.push(nightLine);
 
   // 行を改行でつなげて1本の文章に
   return lines.join("\n");
+}
+
+function formatDailyRecordForLINE(record: DailyRecord): string {
+  const lines: string[] = [];
+
+  // タイトル行（角カッコ＋日付は現行のロジックそのまま）
+  lines.push(formatHeaderTitle(record.date));
+
+  // 注記
+  lines.push("※食事は写真に無いものも全量記載");
+  lines.push(""); // 空行
+
+  // 体重ブロック（見出しのみプレーンに）
+  lines.push("体重");
+
+  const morningLine = formatWeightLine(
+    "朝",
+    record.morningWeight,
+    record.morningWeightTime
+  );
+  const nightLine = formatWeightLine(
+    "夜",
+    record.nightWeight,
+    record.nightWeightTime
+  );
+
+  lines.push(morningLine);
+  lines.push(nightLine);
+
+  // コンディションは出さない（formatConditionForReportは呼ばない）
+
+  // 食事ブロック
+  lines.push("");
+  lines.push("食事");
+  lines.push(formatMealsForReport(record));
+
+  // 運動ブロック（メモのみ：formatExercisesForReportを流用）
+  lines.push("");
+  lines.push("運動");
+  lines.push(formatExercisesForReport(record));
+
+  return lines.join("\n");
+}
+function formatDailyRecordForCopilot(record: DailyRecord): string {
+  const lines: string[] = [];
+
+  // 日付ヘッダー
+  lines.push(formatHeaderTitle(record.date));
+  lines.push(""); // 空行
+
+  // 運動だけ
+  lines.push("🏋️‍♂️運動");
+  lines.push(formatExercisesForReport(record));
+
+  return lines.join("\n");
+}
+export function formatDailyRecord(
+  record: DailyRecord,
+  target: ExportTarget = "chatgpt"
+): string {
+  switch (target) {
+    case "line":
+      return formatDailyRecordForLINE(record);
+    case "copilot":
+      return formatDailyRecordForCopilot(record);
+    case "chatgpt":
+    default:
+      return formatDailyRecordForChatGPT(record);
+  }
 }

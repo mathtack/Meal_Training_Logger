@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
-import type { DailyRecord, MealRecord, ExerciseRecord } from "../domain/DailyRecord";
-import { formatDailyRecord } from "../domain/formatDailyRecord"; // ← これ追加
+import type {
+  DailyRecord,
+  MealRecord,
+  ExerciseRecord,
+} from "../domain/DailyRecord";
+import { formatDailyRecord, type ExportTarget } from "../domain/formatDailyRecord";
 
 import type { HistoryRecord } from "../domain/history";
 import {
@@ -245,14 +249,127 @@ export const ExercisesSection: React.FC<DailyRecordSectionProps> = ({
   );
 };
 
-export const ConditionSection: React.FC<DailyRecordSectionProps> = () => {
+export const ConditionSection: React.FC<DailyRecordSectionProps> = ({
+  record,
+  onChange,
+}) => {
+  // セレクト共通ハンドラ：空文字なら undefined にする
+  const handleSelectChange =
+    <K extends keyof DailyRecord>(key: K) =>
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = e.target.value;
+      onChange({
+        [key]: (value === "" ? undefined : value) as DailyRecord[K],
+      });
+    };
+
   return (
-    <section style={{ marginBottom: "16px", opacity: 0.8 }}>
-      <h2>コンディション（準備中）</h2>
-      <p style={{ fontSize: "0.9rem" }}>
-        睡眠 / 水分 / 疲労感 / 便通 / 気分 などの入力欄を
-        今後ここに追加していく予定だよ。
+    <section style={{ marginBottom: "16px" }}>
+      <h2>🧠 コンディション（任意）</h2>
+      <p style={{ fontSize: "0.9rem", marginBottom: 8 }}>
+        夜にその日の状態をざっくり振り返る用だよ。入力しなかった項目はプレビューにも表示されないよ。
       </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* 🛌 睡眠 */}
+        <label>
+          🛌 睡眠：
+          <select
+            value={record.sleepDurationCategory ?? ""}
+            onChange={handleSelectChange("sleepDurationCategory")}
+            style={{ marginRight: 8 }}
+          >
+            <option value="">（時間を選択）</option>
+            <option value="lt6h">6時間未満</option>
+            <option value="h6to7">6〜7時間</option>
+            <option value="gte7h">7時間以上</option>
+          </select>
+          <select
+            value={record.sleepQuality ?? ""}
+            onChange={handleSelectChange("sleepQuality")}
+          >
+            <option value="">（質を選択）</option>
+            <option value="bad">悪い</option>
+            <option value="normal">普通</option>
+            <option value="good">良い</option>
+          </select>
+        </label>
+
+        {/* 💧 水分 */}
+        <label>
+          💧 水分：
+          <select
+            value={record.waterIntake ?? ""}
+            onChange={handleSelectChange("waterIntake")}
+          >
+            <option value="">（選択）</option>
+            <option value="lt1l">1L未満</option>
+            <option value="l1to1_5">1〜1.5L</option>
+            <option value="l1_5to2">1.5〜2L</option>
+            <option value="gte2l">2L以上</option>
+          </select>
+        </label>
+
+        {/* 🔋 身体 */}
+        <label>
+          🔋 身体：
+          <select
+            value={record.physicalCondition ?? ""}
+            onChange={handleSelectChange("physicalCondition")}
+          >
+            <option value="">（選択）</option>
+            <option value="fine">元気</option>
+            <option value="slightly_tired">少し疲れ</option>
+            <option value="tired">かなり疲れ</option>
+            <option value="exhausted">強い疲労</option>
+          </select>
+        </label>
+
+        {/* 💭 気分 */}
+        <label>
+          💭 気分：
+          <select
+            value={record.mood ?? ""}
+            onChange={handleSelectChange("mood")}
+          >
+            <option value="">（選択）</option>
+            <option value="good">良い</option>
+            <option value="normal">普通</option>
+            <option value="bad">悪い</option>
+            <option value="worst">最悪</option>
+          </select>
+        </label>
+
+        {/* 🤤 空腹感 */}
+        <label>
+          🤤 空腹感：
+          <select
+            value={record.hungerLevel ?? ""}
+            onChange={handleSelectChange("hungerLevel")}
+          >
+            <option value="">（選択）</option>
+            <option value="none">なし</option>
+            <option value="slight">多少あり</option>
+            <option value="strong">強くあり</option>
+          </select>
+        </label>
+
+        {/* 🚽 便通 */}
+        <label>
+          🚽 便通：
+          <select
+            value={record.bowelMovement ?? ""}
+            onChange={handleSelectChange("bowelMovement")}
+          >
+            <option value="">（選択）</option>
+            <option value="none">出ない</option>
+            <option value="once">1回</option>
+            <option value="twice">2回</option>
+            <option value="three_or_more">3回以上</option>
+          </select>
+        </label>
+
+      </div>
     </section>
   );
 };
@@ -291,6 +408,9 @@ export const DailyRecordForm: React.FC = () => {
       meals: latest.meals && latest.meals.length > 0 ? latest.meals : base.meals,
     };
   });
+
+  // 追加：出力先の選択状態
+  const [exportTarget, setExportTarget] = useState<ExportTarget>("chatgpt");
 
   // フォーム内に追加（コンポーネントの外じゃなくて中にね！）
   const isValidWeightValue = (weight?: number): boolean => {
@@ -337,10 +457,48 @@ export const DailyRecordForm: React.FC = () => {
     // history は触らない（履歴はそのまま残す）
   };
   // 生成されるメッセージ（毎回最新の record から生成）
-  const previewText = formatDailyRecord(record);
+  const previewText = formatDailyRecord(record, exportTarget);
+
+  // 今日の日付を "YYYY-MM-DD" 形式で取るヘルパー
+  const getTodayDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  // 日付が「今日」とズレている場合に確認ダイアログを出す
+  const ensureDateIsSafeForSave = () => {
+    if (!record.date) {
+      alert("日付が空欄のままだと、履歴に保存できないよ。日付を入力してね。");
+      return false;
+    }
+
+    const today = getTodayDateString();
+
+    if (record.date !== today) {
+      const ok = window.confirm(
+        `日付が今日 (${today}) ではなく ${record.date} のままになっているよ。\n\n` +
+          `このまま「${record.date}」の記録として履歴に保存してもいい？\n\n` +
+          `※ 間違いの場合は「キャンセル」を押して、日付を修正してからもう一度保存してね。`
+      );
+
+      if (!ok) {
+        return false;
+      }
+    }
+
+    return true;
+  };
 
   // 現在の record を履歴に保存する共通関数
   const saveCurrentToHistory = () => {
+      // 日付チェック。問題あればここで中断。
+    if (!ensureDateIsSafeForSave()) {
+      return false;
+    }
+
     const entry: HistoryRecord = {
       ...record,
       savedAt: new Date().toISOString(),
@@ -356,6 +514,8 @@ export const DailyRecordForm: React.FC = () => {
 
       return next;
     });
+
+    return true;
   };
 
   // エクスポートJSONを生成する
@@ -408,22 +568,44 @@ export const DailyRecordForm: React.FC = () => {
 
   // クリップボードにコピーするハンドラ
   // ＋ 履歴保存も同時にやる
-  const handleCopyToClipboard = async () => {
-    const text = previewText.trim();
-    if (!text) return;
+const handleCopyToClipboard = async () => {
+  const text = previewText.trim();
+  if (!text) return;
 
-    // ① 先に履歴保存だけは必ずやる
-    saveCurrentToHistory();
+  // ① まず履歴保存を試みる（true: 保存成功 / false: 日付チェック等で中断）
+  const saved = saveCurrentToHistory();
 
-    // ② そのうえでコピーを試みる
-    try {
-      await navigator.clipboard.writeText(text);
-      alert("クリップボードにコピーしたよ👌\n今日の記録も履歴に保存しておいたよ📒");
-    } catch (err) {
-      console.error("コピーに失敗しました", err);
-      alert("今日の記録は履歴に保存したけど、クリップボードコピーは失敗しちゃった…🥲");
-    }
-  };
+  // ② クリップボードコピーを試みる
+  let copySucceeded = false;
+  try {
+    await navigator.clipboard.writeText(text);
+    copySucceeded = true;
+  } catch (err) {
+    console.error("コピーに失敗しました", err);
+  }
+
+  // ③ 結果に応じてメッセージを出し分け
+  if (copySucceeded && saved) {
+    // 両方成功
+    alert(
+      "クリップボードにコピーしたよ👌\n今日の記録も履歴に保存しておいたよ📒"
+    );
+  } else if (copySucceeded && !saved) {
+    // コピーだけ成功
+    alert("メッセージをクリップボードにコピーしたよ👌");
+  } else if (!copySucceeded && saved) {
+    // 履歴だけ成功
+    alert(
+      "今日の記録は履歴に保存したけど、クリップボードコピーは失敗しちゃった…🥲"
+    );
+  } else {
+    // どちらも成功しなかったパターン
+    alert(
+      "クリップボードコピーも履歴保存も完了しなかったよ…🥲\n" +
+        "日付の設定やブラウザのクリップボード権限を確認して、もう一度試してみてね。"
+    );
+  }
+};
 
   const handleLoadFromHistory = (entry: HistoryRecord) => {
     // フォームに選択した履歴を反映
@@ -604,13 +786,23 @@ export const DailyRecordForm: React.FC = () => {
       {/* ③ メッセージプレビューエリア */}
       <section>
         <h2>メッセージプレビューエリア</h2>
-        <pre>{previewText}</pre>
-      </section>
 
-      {/* ④ デバッグエリア */}
-      <section>
-        <h2>デバッグエリア</h2>
-        <pre>{JSON.stringify(record, null, 2)}</pre>
+        <div style={{ marginBottom: "8px" }}>
+          <label>
+            送信先：
+            <select
+              value={exportTarget}
+              onChange={(e) => setExportTarget(e.target.value as ExportTarget)}
+              style={{ marginLeft: 8 }}
+            >
+              <option value="chatgpt">ChatGPT（完全版）</option>
+              <option value="line">LINE（栄養管理士向け）</option>
+              <option value="copilot">Copilot（運動のみ）</option>
+            </select>
+          </label>
+        </div>
+
+        <pre>{previewText}</pre>
       </section>
     </div>
   );
