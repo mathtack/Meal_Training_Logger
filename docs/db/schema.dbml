@@ -1,0 +1,133 @@
+// Auto-generated from step2_column_definition_v2.xlsx
+// Source of truth: Step2 column definition
+
+Table daily_record {
+  id uuid [pk, not null] // 日次記録ID / 1日分のレコードを識別
+  user_id uuid [not null] // ユーザーID / ユーザー識別子
+  record_date date [not null] // 記録日 / 記録対象日
+  created_at timestamptz [not null] // 作成日時 / 初回作成日時
+  updated_at timestamptz [not null] // 更新日時 / 最終更新日時(更新のたび上書き)
+
+  Indexes {
+    (user_id, record_date) [unique]
+  }
+}
+
+Table weight_record {
+  id uuid [pk, not null] // 体重記録ID / 測定1回分のレコードを識別
+  daily_record_id uuid [not null, ref: > daily_record.id] // 日次記録ID / エンティティ：daily_recordとのリレーションに利用
+  measurement_time_slot varchar [not null] // 測定時間帯 / 朝,夜,他などの測定時間帯を区別
+  measurement_order integer [not null] // 測定順 / 測定時間帯ごとの表示順。原則朝,夜,他の順だが、UI選択や時系列順などで変更可能
+  measured_at timestamptz // 測定時刻 / 測定時間帯ごとの、測定時刻
+  weight decimal(5,2) [not null] // 体重 / 測定時間帯ごとの、体重
+  created_at timestamptz [not null] // 作成日時 / 初回作成日時
+  updated_at timestamptz [not null] // 更新日時 / 最終更新日時(更新のたび上書き)
+}
+
+Table wellness_record {
+  daily_record_id uuid [pk, not null, ref: > daily_record.id] // 日次記録ID / 記録1回分のレコードを識別。エンティティ：daily_recordとのリレーション（1:1）に利用
+  sleep_duration_category varchar // 睡眠時間カテゴリ / 睡眠時間のざっくり区分（lt6h / h6to7 / gte7h）
+  sleep_quality varchar // 睡眠の質 / 睡眠の質（bad / normal / good）
+  sleep_duration_minutes integer // 推定睡眠時間（分） / 睡眠時間の分数（はじめは手入力、将来的にHealthKit連携）
+  sleep_source varchar // 睡眠データソース / 睡眠データのソース（手入力の場合：manual / 連携の場合：healthkit）
+  water_intake varchar // 水分摂取カテゴリ / 1日の摂取水分量の区分（lt1l / l1to1_5 / ...）
+  physical_condition varchar // 身体コンディション / 身体の状態（fine / slightly_tired / ...）
+  mood varchar // 気分 / その日の気分（good / normal / bad / worst）
+  hunger_level varchar // 空腹感 / 1日の空腹感レベル（none / slight / strong）
+  bowel_movement varchar // 便通 / 1日の便通状況（none / once / twice / three_or_more）
+  created_at timestamptz [not null] // 作成日時 / 初回作成日時
+  updated_at timestamptz [not null] // 更新日時 / 最終更新日時(更新のたび上書き)
+
+  Indexes {
+    (daily_record_id) [unique]
+  }
+}
+// 1:1: wellness_record.daily_record_id is PK (=FK). Max 1 row per daily_record.
+
+Table meal_record {
+  id uuid [pk, not null] // 食事記録ID / 食事1回分のレコードを識別
+  daily_record_id uuid [not null, ref: > daily_record.id] // 日次記録ID / エンティティ：daily_recordとのリレーションに利用
+  recording_category varchar [not null] // 記録区分 / 朝食,昼食,夕食,間食などの食事を区別
+  meal_order integer [not null] // 食事順 / 記録区分ごとの表示順。原則朝食,昼食,夕食,間食の順だが、UI選択や時系列順などで変更可能
+  eaten_at timestamptz // 食事時刻 / 記録区分ごとの、食事記録時刻
+  meal_memo text // 食事メモ / 現行のmemo、将来は備考欄とする
+  created_at timestamptz [not null] // 作成日時 / 初回作成日時
+  updated_at timestamptz [not null] // 更新日時 / 最終更新日時(更新のたび上書き)
+}
+
+Table meal_attachment {
+  id  uuid [pk, not null] // 食事添付資料ID / 食事1回分のレコードを識別
+  meal_record_id uuid [not null, ref: > meal_record.id] // 食事記録ID / エンティティ：meal_recordとのリレーションに利用
+  storage_path text [not null] // 添付資料パス / UIで添付操作された際に、パスが入力される
+  attachment_order integer // 添付順 / 添付資料パスごとの表示順。原則1点のみ、順番操作はあまり発生しない想定
+  created_at timestamptz [not null] // 作成日時 / 初回作成日時
+  updated_at timestamptz [not null] // 更新日時 / 最終更新日時(更新のたび上書き)
+}
+
+Table food_item {
+  id  uuid [pk, not null] // 食事品目情報ID / 食事品目（料理名・食材・材料等）1種木分のレコードを識別
+  meal_record_id uuid [not null, ref: > meal_record.id] // 食事記録ID / エンティティ：meal_recordとのリレーションに利用
+  food_name text [not null] // 食べた料理・食材 / 食事品目（料理名・食材・材料等）の名前
+  food_amount decimal(6,2) [not null] // 量 / 食事量の量
+  food_amount_unit text [not null] // 単位 / 食事量の単位（本来プルダウン化すべきだが、テキストで運用とするか）
+  food_calorie decimal(6,2) [not null] // カロリー / 食事のカロリー
+  food_protein decimal(5,2) // たんぱく質 / たんぱく質（PFCのP）
+  food_fat decimal(5,2) // 脂質 / 脂質（PFCのF）
+  food_carbohydrates decimal(5,2) // 炭水化物 / 炭水化物（PFCのC）
+  created_at timestamptz [not null] // 作成日時 / 初回作成日時
+  updated_at timestamptz [not null] // 更新日時 / 最終更新日時(更新のたび上書き)
+}
+
+Table exercise_session {
+  id uuid [pk, not null] // 運動セッションID / 運動セッション1回分のレコードを識別
+  daily_record_id uuid [not null, ref: > daily_record.id] // 日次記録ID / エンティティ：daily_recordとのリレーションに利用
+  session_order integer [not null] // 運動セッション順 / 日内の運動セッションの表示順（時刻が無い/曖昧でも並べ替え可能にする）
+  session_label text // セッションラベル / 任意のラベル（例：朝トレ、夜トレ、ジム等）
+  started_at timestamptz // 運動開始時刻 / 運動開始した時刻
+  ended_at timestamptz // 運動終了時刻 / 運動終了した時刻
+  memo text // 運動メモ / トレーニング内容のメモ（セッション単位）
+  calories_burned integer // 運動消費カロリー / その運動で消費したカロリー（kcal）
+  created_at timestamptz [not null] // 作成日時 / 初回作成日時
+  updated_at timestamptz [not null] // 更新日時 / 最終更新日時(更新のたび上書き)
+
+  Indexes {
+    (daily_record_id, session_order) [unique]
+  }
+}
+
+Table exercise_item {
+  id uuid [pk, not null] // 運動種目ID / 種目1件分のレコードを識別
+  exercise_session_id uuid [not null, ref: > exercise_session.id] // 運動セッションID / エンティティ：exercise_sessionとのリレーションに利用
+  item_order integer [not null] // 種目順 / セッション内の表示順
+  body_part text // 種目部位 / 種目名を分類する区分（例：胸、背中、脚など）
+  exercise_name text [not null] // 種目名 / トレーニング種目の名前（例：ベンチプレス等）
+  exercise_type varchar [not null] // 運動種類 / 有酸素/無酸素の区分（種目単位）
+  recording_style varchar [not null] // 記録形式 / この種目の記録方式（セットで記録 or テキストで記録）
+  free_text text // 自由記述 / セットで表現しづらい内容を記録（例：バイク5分、ラン2km等）
+  created_at timestamptz [not null] // 作成日時 / 初回作成日時
+  updated_at timestamptz [not null] // 更新日時 / 最終更新日時(更新のたび上書き)
+
+  Indexes {
+    (exercise_session_id, item_order) [unique]
+  }
+}
+
+Table set_item {
+  id uuid [pk, not null] // 運動セットID / セット1件分のレコードを識別
+  exercise_item_id uuid [not null, ref: > exercise_item.id] // 運動種目ID / エンティティ：exercise_itemとのリレーションに利用
+  set_order integer [not null] // セット順 / 種目内の表示順
+  load_value decimal(6,2) // 重さ / トレーニングに課する重さ
+  load_unit varchar // 単位 / 重さの単位
+  reps integer // 回数 / トレーニングの回数（左右区分OFFの場合）
+  has_sides boolean [not null] // 左右区分 / 左右で回数を分けるか（On/Off）
+  reps_left integer // 回数（左） / 左右区分ONの場合の左回数
+  reps_right integer // 回数（右） / 左右区分ONの場合の右回数
+  duration_seconds integer // 時間数（秒） / トレーニングの時間（例：60secの60。単位は秒固定）
+  memo text // メモ / 補足説明するメモ（例：補助あり、バランスボール利用等）
+  created_at timestamptz [not null] // 作成日時 / 初回作成日時
+  updated_at timestamptz [not null] // 更新日時 / 最終更新日時(更新のたび上書き)
+
+  Indexes {
+    (exercise_item_id, set_order) [unique]
+  }
+}

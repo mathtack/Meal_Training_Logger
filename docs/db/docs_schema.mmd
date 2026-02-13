@@ -1,0 +1,119 @@
+erDiagram
+  daily_record {
+    uuid id PK
+    uuid user_id
+    date record_date
+    datetime created_at
+    datetime updated_at
+  }
+
+  weight_record {
+    uuid id PK
+    uuid daily_record_id FK
+    string measurement_time_slot
+    integer measurement_order
+    datetime measured_at
+    decimal weight
+    datetime created_at
+    datetime updated_at
+  }
+
+  wellness_record {
+    uuid daily_record_id PK FK
+    string sleep_duration_category
+    string sleep_quality
+    integer sleep_duration_minutes
+    string sleep_source
+    string water_intake
+    string physical_condition
+    string mood
+    string hunger_level
+    string bowel_movement
+    datetime created_at
+    datetime updated_at
+  }
+
+  meal_record {
+    uuid id PK
+    uuid daily_record_id FK
+    string recording_category
+    integer meal_order
+    datetime eaten_at
+    string meal_memo
+    datetime created_at
+    datetime updated_at
+  }
+
+  meal_attachment {
+    uuid id  PK
+    uuid meal_record_id FK
+    string storage_path
+    integer attachment_order
+    datetime created_at
+    datetime updated_at
+  }
+
+  food_item {
+    uuid id  PK
+    uuid meal_record_id FK
+    string food_name
+    decimal food_amount
+    string food_amount_unit
+    decimal food_calorie
+    decimal food_protein
+    decimal food_fat
+    decimal food_carbohydrates
+    datetime created_at
+    datetime updated_at
+  }
+
+  exercise_session {
+    uuid id PK
+    uuid daily_record_id FK
+    integer session_order
+    string session_label
+    datetime started_at
+    datetime ended_at
+    string memo
+    integer calories_burned
+    datetime created_at
+    datetime updated_at
+  }
+
+  exercise_item {
+    uuid id PK
+    uuid exercise_session_id FK
+    integer item_order
+    string body_part
+    string exercise_name
+    string exercise_type
+    string recording_style
+    string free_text
+    datetime created_at
+    datetime updated_at
+  }
+
+  set_item {
+    uuid id PK
+    uuid exercise_item_id FK
+    integer set_order
+    decimal load_value
+    string load_unit
+    integer reps
+    boolean has_sides
+    integer reps_left
+    integer reps_right
+    integer duration_seconds
+    string memo
+    datetime created_at
+    datetime updated_at
+  }
+
+  daily_record ||--o{ weight_record : "daily_record_id"
+  daily_record ||--|| wellness_record : "daily_record_id"
+  daily_record ||--o{ meal_record : "daily_record_id"
+  meal_record ||--o{ meal_attachment : "meal_record_id"
+  meal_record ||--o{ food_item : "meal_record_id"
+  daily_record ||--o{ exercise_session : "daily_record_id"
+  exercise_session ||--o{ exercise_item : "exercise_session_id"
+  exercise_item ||--o{ set_item : "exercise_item_id"
