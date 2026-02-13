@@ -1,5 +1,4 @@
 ```mermaid
-`// NOTE: This is a derived view. Source of truth is docs/schema.dbml`
 erDiagram
   daily_record {
     uuid id PK
