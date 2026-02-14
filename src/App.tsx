@@ -1,14 +1,8 @@
-// import React from "react";
-import "./App.css";
+// src/App.tsx
 import { DailyRecordForm } from "./components/DailyRecordForm";
+import { DailyRecordFormV110 } from "./ui/DailyRecordFormV110";
 
-function App() {
-  return (
-    <div>
-      <h1>Meal & Training Logger</h1>
-      <DailyRecordForm />
-    </div>
-  );
+export default function App() {
+  const useV110 = import.meta.env.DEV;
+  return useV110 ? <DailyRecordFormV110 /> : <DailyRecordForm />;
 }
-
-export default App;
