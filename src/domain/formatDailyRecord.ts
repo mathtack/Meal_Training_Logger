@@ -119,7 +119,7 @@ function formatWeightLine(
     return `${prefix}（記録なし）`;
   }
 
-  let trimmedTime = time?.trim();
+  const trimmedTime = time?.trim();
 
   if (trimmedTime) {
     // "07:00" → "7:00" みたいに整形

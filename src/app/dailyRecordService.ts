@@ -2,8 +2,8 @@
 import type { DailyRecordAggregate, ISODate } from "../domain/type";
 import type { DailyRecordRepository } from "../ports/DailyRecordRepository";
 import { dailyRecordRepositoryLocalStorage } from "../data/dailyRecordRepository.localStorage";
-import { normalizeExerciseOrders } from "../domain/normalizers/normalizeExerciseOrders";
 import { createEmptyDailyRecordAggregate } from "../domain/factories/createEmptyDailyRecordAggregate";
+import { normalizeDailyRecordAggregate } from "../domain/normalizers/normalizeDailyRecordAggregate";
 
 export type LoadResult = { record: DailyRecordAggregate; source: "saved" | "empty" };
 
@@ -11,13 +11,17 @@ export const createDailyRecordService = (repo: DailyRecordRepository = dailyReco
   return {
     load(date: ISODate): LoadResult {
       const saved = repo.get(date);
-      if (saved) return { record: saved, source: "saved" };
-      return { record: createEmptyDailyRecordAggregate(date), source: "empty" };
+      if (saved) return { record: normalizeDailyRecordAggregate(saved), source: "saved" };
+
+      const empty = createEmptyDailyRecordAggregate(date);
+      return { record: normalizeDailyRecordAggregate(empty), source: "empty" };
     },
 
-    save(record: DailyRecordAggregate): void {
-      const normalized = normalizeExerciseOrders(record);
+    // 👇 normalized を返すのがポイント
+    save(record: DailyRecordAggregate): DailyRecordAggregate {
+      const normalized = normalizeDailyRecordAggregate(record);
       repo.save(normalized);
+      return normalized;
     },
 
     delete(date: ISODate): void {
@@ -25,3 +29,4 @@ export const createDailyRecordService = (repo: DailyRecordRepository = dailyReco
     },
   };
 };
+
