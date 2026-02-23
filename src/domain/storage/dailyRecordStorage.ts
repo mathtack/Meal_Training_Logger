@@ -19,7 +19,7 @@ import type {
   DailyRecord as LegacyDailyRecord,
   MealRecord as LegacyMealRecord,
   ExerciseRecord as LegacyExerciseRecord,
-} from "../DailyRecord";
+} from "../../legacy/domain/DailyRecord";
 
 // Storage Keys
 const KEY_PREFIX = "daily_record:";

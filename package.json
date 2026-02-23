@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deps:graph": "madge src --image docs/deps.svg --extensions ts,tsx",
-    "deps:circular": "madge src --circular --extensions ts,tsx",
+    "deps:graph": "madge src --exclude 'legacy' --image docs/deps.svg --extensions ts,tsx",
+    "deps:circular": "madge src --exclude 'legacy' --circular --extensions ts,tsx",
     "test": "vitest"
   },
   "dependencies": {
