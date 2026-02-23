@@ -8,22 +8,19 @@ import type {
   ExerciseItem,
   SetItem,
   WeightRecord,
-  WellnessRecord,
-  MealRecord as NewMealRecord,
   MealAttachment,
   FoodItem,
-  ExerciseSession,
   DailyRecordSummary,
 } from "../type";
-import type {
-  DailyRecord as LegacyDailyRecord,
-  MealRecord as LegacyMealRecord,
-  ExerciseRecord as LegacyExerciseRecord,
-} from "../../legacy/domain/DailyRecord";
+//import type {
+//  DailyRecord as LegacyDailyRecord,
+//  MealRecord as LegacyMealRecord,
+//  ExerciseRecord as LegacyExerciseRecord,
+//} from "../../legacy/domain/DailyRecord";
 
 // Storage Keys
 const KEY_PREFIX = "daily_record:";
-const LEGACY_HISTORY_KEY = "meal-training-logger:history";
+// const LEGACY_HISTORY_KEY = "meal-training-logger:history";
 // const LEGACY_LATEST_KEY = "meal-training-logger:latestRecord"; // 旧形式の latestRecord は日付特定できないので history の方から探す想定
 
 function keyOf(date: ISODate): string {
@@ -37,10 +34,6 @@ const dlog = (...args: unknown[]) => {
 };
 const dwarn = (...args: unknown[]) => {
   if (DEBUG_STORAGE) console.warn(...args);
-};
-const derror = (...args: unknown[]) => {
-  // errorは本番でも見たいなら無条件。DEV限定にしたいなら if(DEBUG_STORAGE) にしてOK
-  console.error(...args);
 };
 
 function listDailyRecordSummariesInternal(): DailyRecordSummary[] {
@@ -79,225 +72,7 @@ function listDailyRecordSummariesInternal(): DailyRecordSummary[] {
   return summaries;
 }
 
-/**
- * UUID v4 生成（簡易版）
- */
-function generateUUID(): string {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-/**
- * 時刻文字列 (HH:MM) を ISO DateTime に変換
- * @param timeStr "HH:MM" 形式
- * @param date YYYY-MM-DD 形式の日付
- * @returns ISO 8601 形式の文字列
- */
-function timeStringToISO(timeStr: string | undefined, date: string): ISODateTime | null {
-  if (!timeStr) return null;
-  try {
-    // "HH:MM" → "${date}T${HH:MM}:00Z"
-    const isoStr = `${date}T${timeStr}:00Z`;
-    return new Date(isoStr).toISOString();
-  } catch {
-    return null;
-  }
-}
-
-/**
- * 旧形式の meal.time を recording_category にマッピング
- */
-function mapMealTimeToCategory(
-  timeStr: string
-): "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK" {
-  const normalized = timeStr.trim().toLowerCase();
-  if (normalized === "朝") return "BREAKFAST";
-  if (normalized === "昼") return "LUNCH";
-  if (normalized === "夜") return "DINNER";
-  if (normalized === "間食") return "SNACK";
-  // デフォルト：朝食扱い
-  return "BREAKFAST";
-}
-
-/**
- * Legacy DailyRecord 判定
- */
-function isLegacy(obj: any): obj is LegacyDailyRecord {
-  return (
-    obj &&
-    typeof obj === "object" &&
-    typeof obj.date === "string" &&
-    Array.isArray(obj.meals)
-  );
-}
-
-/**
- * Legacy DailyRecord から DailyRecordAggregate に変換
- * - savedAt が無い場合のみ now を使う
- */
-function migrateLegacyToAggregate(
-  legacy: LegacyDailyRecord,
-  savedAt: string | undefined,
-  now: ISODateTime
-): DailyRecordAggregate {
-  const baseTimestamp = savedAt ?? now;
-
-  // ============ DailyRecord （主エンティティ）==================
-  const daily_record = {
-    id: generateUUID(),
-    user_id: "TODO_USER_ID", // ユーザーID推測不可
-    record_date: legacy.date as ISODate,
-    created_at: baseTimestamp as ISODateTime,
-    updated_at: baseTimestamp as ISODateTime,
-  };
-
-  // ============ Weight Records ==================
-  const weights: WeightRecord[] = [];
-
-  if (legacy.morningWeight !== undefined) {
-    weights.push({
-      id: generateUUID(),
-      daily_record_id: daily_record.id,
-      measurement_time_slot: "MORNING",
-      measurement_order: 0,
-      weight: legacy.morningWeight,
-      measured_at: timeStringToISO(
-        legacy.morningWeightTime,
-        legacy.date
-      ) as ISODateTime | null,
-      created_at: baseTimestamp as ISODateTime,
-      updated_at: baseTimestamp as ISODateTime,
-    });
-  }
-
-  if (legacy.nightWeight !== undefined) {
-    weights.push({
-      id: generateUUID(),
-      daily_record_id: daily_record.id,
-      measurement_time_slot: "EVENING",
-      measurement_order: 1,
-      weight: legacy.nightWeight,
-      measured_at: timeStringToISO(
-        legacy.nightWeightTime,
-        legacy.date
-      ) as ISODateTime | null,
-      created_at: baseTimestamp as ISODateTime,
-      updated_at: baseTimestamp as ISODateTime,
-    });
-  }
-
-  // ============ Wellness Record ==================
-  const wellness: WellnessRecord | null = (() => {
-    const hasWellnessData =
-      legacy.sleepDurationCategory ||
-      legacy.sleepQuality ||
-      legacy.sleepDurationMinutes ||
-      legacy.sleepSource ||
-      legacy.waterIntake ||
-      legacy.physicalCondition ||
-      legacy.mood ||
-      legacy.hungerLevel ||
-      legacy.bowelMovement;
-
-    if (!hasWellnessData) return null;
-
-    return {
-      daily_record_id: daily_record.id,
-      sleep_duration_category: legacy.sleepDurationCategory ?? null,
-      sleep_quality: legacy.sleepQuality ?? null,
-      sleep_duration_minutes: legacy.sleepDurationMinutes ?? null,
-      sleep_source: legacy.sleepSource ?? null,
-      water_intake: legacy.waterIntake ?? null,
-      physical_condition: legacy.physicalCondition ?? null,
-      mood: legacy.mood ?? null,
-      hunger_level: legacy.hungerLevel ?? null,
-      bowel_movement: legacy.bowelMovement ?? null,
-      created_at: baseTimestamp as ISODateTime,
-      updated_at: baseTimestamp as ISODateTime,
-    };
-  })();
-
-  // ============ Meals ==================
-  const meals: MealAggregate[] = (legacy.meals ?? []).map(
-    (m: LegacyMealRecord, idx: number) => {
-      const meal_record: NewMealRecord = {
-        id: generateUUID(),
-        daily_record_id: daily_record.id,
-        recording_category: mapMealTimeToCategory(m.time),
-        meal_order: idx,
-        eaten_at: (timeStringToISO(m.eatenAt, legacy.date) as ISODateTime | null) ?? undefined,
-        meal_memo: m.memo ?? undefined,
-        created_at: baseTimestamp as ISODateTime,
-        updated_at: baseTimestamp as ISODateTime,
-      };
-
-      const attachments: MealAttachment[] = (m.photos ?? []).map(
-        (photoPath: string, photoIdx: number) => ({
-          id: generateUUID(),
-          meal_record_id: meal_record.id,
-          storage_path: photoPath,
-          attachment_order: photoIdx ?? undefined,
-          created_at: baseTimestamp as ISODateTime,
-          updated_at: baseTimestamp as ISODateTime,
-        })
-      );
-
-      // food_items は旧形式に無いので空配列
-      const food_items: FoodItem[] = [];
-
-      return { meal_record, attachments, food_items };
-    }
-  );
-
-  // ============ Exercise Sessions ==================
-  const exercise_sessions: ExerciseSessionAggregate[] = (
-    legacy.exercises ?? []
-  ).map((e: LegacyExerciseRecord, idx: number) => {
-    const session: ExerciseSession = {
-      id: generateUUID(),
-      daily_record_id: daily_record.id,
-      session_order: idx,
-      session_label: e.time ?? null,
-      started_at: null, // 旧形式に無い
-      ended_at: null, // 旧形式に無い
-      memo: e.memo ?? null,
-      calories_burned: e.calories ?? null,
-      created_at: baseTimestamp as ISODateTime,
-      updated_at: baseTimestamp as ISODateTime,
-    };
-
-    // 旧形式はセット構造が無いので TEXT モードで free_text を作る
-    const items: ExerciseItem[] = [
-      {
-        id: generateUUID(),
-        exercise_session_id: session.id,
-        item_order: 0,
-        body_part: null, // 旧形式に無い
-        exercise_name: e.time ?? "Exercise",
-        exercise_type: "AEROBIC", // デフォルト（推測使用）
-        recording_style: "TEXT",
-        free_text: e.memo ?? "",
-        created_at: baseTimestamp as ISODateTime,
-        updated_at: baseTimestamp as ISODateTime,
-      },
-    ];
-
-    return { session, items };
-  });
-
-  const aggregate: DailyRecordAggregate = {
-    daily_record,
-    weights,
-    wellness,
-    meals,
-    exercise_sessions,
-  };
-
-  return aggregate;
-}
+// legacy migration helpers are disabled after v1.1.0 release cleanup.
 
 function hasDeletion(prevIds: string[], nextIds: string[]): boolean {
   const nextSet = new Set(nextIds);
@@ -612,109 +387,12 @@ function loadV110(date: ISODate): DailyRecordAggregate | null {
   try {
     return JSON.parse(raw) as DailyRecordAggregate;
   } catch (e) {
-    dwarn(`Failed to parse v1.1.0 record at key ${k}. Falling back to legacy.`);
-    return null; // パース失敗でも legacy に落とす
-  }
-}
-
-function loadLegacyHistory(): any[] | null {
-  const raw = localStorage.getItem(LEGACY_HISTORY_KEY);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return null;
-    return parsed;
-  } catch (e) {
-    derror(`Failed to parse legacy history at key ${LEGACY_HISTORY_KEY}:`, e);
+    dwarn(`Failed to parse v1.1.0 record at key ${k}.`, e);
     return null;
   }
 }
 
-function findUniqueLegacyByDate(history: any[], date: ISODate): LegacyDailyRecord | null {
-  const matches = history.filter((r) => isLegacy(r) && r.date === date);
-  if (matches.length !== 1) {
-    dwarn(`Legacy record count for date ${date} is ${matches.length}. Skipping migration.`);
-    return null;
-  }
-  return matches[0] as LegacyDailyRecord;
-}
-
-function migrateAndPersist(date: ISODate, legacy: LegacyDailyRecord): DailyRecordAggregate {
-  const now = nowISO();
-  const savedAt = (legacy as any).savedAt as string | undefined;
-
-  const migrated = migrateLegacyToAggregate(legacy, savedAt, now);
-
-  localStorage.setItem(keyOf(date), JSON.stringify(migrated));
-  dlog(`Successfully migrated legacy record for date ${date} to v1.1.0`);
-
-  return migrated;
-}
-
-// 既存：migrateAndPersist のすぐ下あたりに追加すると分かりやすい
-export type LegacyMigrationResultV110 = {
-  migratedDates: ISODate[];
-  alreadyMigratedDates: ISODate[];
-  skippedDates: ISODate[];
-};
-
-/**
- * legacy history 全体を v1.1.0 形式に一括移行する。
- *
- * - 既に daily_record:YYYY-MM-DD がある日は上書きしない（idempotent）
- * - legacy 側で同一日付が 0 件 or 複数件のものはスキップ
- * - JSON 壊れているなどの異常は skippedDates に積む
- */
-export function migrateAllLegacyHistoryToV110(): LegacyMigrationResultV110 {
-  const result: LegacyMigrationResultV110 = {
-    migratedDates: [],
-    alreadyMigratedDates: [],
-    skippedDates: [],
-  };
-
-  const history = loadLegacyHistory();
-  if (!history) {
-    dlog("[migration] no legacy history found.");
-    return result;
-  }
-
-  // legacy history 内の「日付の一覧」をユニークに集める
-  const dateSet = new Set<ISODate>();
-  for (const entry of history) {
-    if (!isLegacy(entry)) continue;
-    if (typeof entry.date !== "string") continue;
-    dateSet.add(entry.date as ISODate);
-  }
-
-  for (const date of dateSet) {
-    const key = keyOf(date);
-
-    // 既に v1.1.0 形式がある日は上書きしない
-    if (localStorage.getItem(key)) {
-      result.alreadyMigratedDates.push(date);
-      continue;
-    }
-
-    const legacy = findUniqueLegacyByDate(history, date);
-    if (!legacy) {
-      // 件数 0 or 複数件など、findUniqueLegacyByDate が null を返したケース
-      result.skippedDates.push(date);
-      continue;
-    }
-
-    try {
-      migrateAndPersist(date, legacy);
-      result.migratedDates.push(date);
-    } catch (e) {
-      derror("[migration] failed to migrate legacy record", { date, error: e });
-      result.skippedDates.push(date);
-    }
-  }
-
-  dlog("[migration] done migrateAllLegacyHistoryToV110", result);
-  return result;
-}
+// legacy migration API is intentionally disabled.
 
 
 // ------------------------------
@@ -724,19 +402,10 @@ export function migrateAllLegacyHistoryToV110(): LegacyMigrationResultV110 {
 export const DailyRecordStorage = {
 
   get(date: ISODate): DailyRecordAggregate | null {
-    // 1) v1.1.0 で取れたらそれを返す
+    // v1.1.0 only
     const v110 = loadV110(date);
     if (v110) return v110;
-
-    // 2) legacy history がなければ終了
-    const history = loadLegacyHistory();
-    if (!history) return null;
-
-    // 3) ちょうど1件なら migrate して保存→返す
-    const legacy = findUniqueLegacyByDate(history, date);
-    if (!legacy) return null;
-
-    return migrateAndPersist(date, legacy);
+    return null;
   },
 
   listSummaries(): DailyRecordSummary[] {

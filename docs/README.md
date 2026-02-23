@@ -1,174 +1,260 @@
-# Meal Training Logger
+# 📘 **🔥 Meal & Training Logger — README（v1.1.0）**
 
-毎日の **食事・トレーニング・体重** を “LINEレポート形式” で素早くまとめ、  
-「手入力の負担を下げつつ、自分の行動ログとしても活用できる」  
-ミニWebアプリケーションです。
+毎日の **体重・食事・体調・運動** を記録し、
+**栄養士・ChatGPT・Copilot 向けのレポートを自動生成するミニWebアプリ**。
 
-- LINEへの食事・運動記録報告を省力化  
-- スマホでサクッと入力して、そのままコピペ or 送信  
-- データがローカルに溜まれば、ゆるく振り返りや分析にも使える  
-- UIは少しだけ Kawaii、でも中身はロジカル  
+* 毎日の記録を最短 30 秒で入力
+* v1.1.0 から **新データモデル（DailyRecordAggregate）** に完全移行
+* 正規化・履歴管理・表形式レポート表示まで一貫して自動化
+* PC・スマホ両対応
+* UI はシンプル、でも構造は堅牢
 
-> 開発方式は Scrum（疑似）。  
-> プロダクトオーナー＝ごうけん、スクラムマスター＝ひな、開発＝ひな＋ごうけんの2名体制。
-
----
-
-## 📌 1. Purpose（目的）
-
-現状、食事記録や運動記録をLINEで手動報告しているが、
-
-- 食事内容  
-- 体重（朝/夜）  
-- 運動内容  
-- 写真添付  
-
-これらを毎回手作業で文字に書き起こすのは手間・時間負担が大きい。
-
-**Meal Training Logger** は  
-この“報告作業の面倒な部分”を自動化しつつ、  
-自分のログとしても役立つようにすることを目的とする。
+> 開発方式は Scrum（疑似）。
+> PO＝ごうけん、SM・技術アドバイザ＝ひな、実装＝ごうけん＋ひな。
+> デバッグ支援＝みな（ChatGPT Codex）。
 
 ---
 
-## 🎯 2. MVP（Minimum Viable Product）
+# 1. 🎯 Purpose（目的）
 
-**MVP（最小価値）で提供する機能は以下の4つ：**
+従来の LINE 手動報告には、以下の問題があった：
 
-1. **データ入力フォーム**  
-   - 日付  
-   - 朝体重 / 夜体重  
-   - 食事（朝・昼・夜・間食）  
-   - 運動（消費カロリー / ジム種目メモ）
+* 毎回“文章化”が面倒
+* 体重・運動・食事の量的情報がバラバラ
+* 過去の記録を遡るのが大変
+* 栄養士へ提出する形式と、普段のレポが異なる
 
-2. **LINE用の“定型文生成”**  
-   入力値から自動でフォーマット化された文章を生成。
+**Meal & Training Logger** は、これらの煩雑さをなくし、
 
-3. **ワンタップコピー機能**  
-   生成文章をクリップボードにコピーして、LINEにペーストするだけにする。
+* 1日を **構造化された記録** として保存
+* 3種類のレポート形式へワンタップで変換
+* 過去データを積み重ねて振り返れる
 
-4. **localStorage保存 & 軽い履歴一覧**  
-   少量のデータをローカルに保持し、直近記録を一覧表示する。
-
-> 「まずは LINEレポの作成時間を減らし、日常の負担を下げる」ことが MVP のゴール。
+そんな「継続しやすい記録体験」を提供する。
 
 ---
 
-## 🚀 3. Future Backlog（将来の拡張案）
+# 2. 🧩 What’s new in v1.1.0
 
-MVP後に順次対応する予定の機能：
+v1.1.0 はアプリ基盤の総リニューアル版。
 
-### 🔧 機能拡張
-- **LINE Notify 送信機能**（文章の自動送信）
-- **履歴のフィルタ/検索**
-- **体重/運動の簡易グラフ表示（週/月）**
-- **食事ジャンルに応じた絵文字タグ（🍚🥗🍜🔥）**
-- **PWA 対応（アプリアイコン化 / フルスクリーン起動）**
-- **写真添付との連動（難易度高）**
-- **CSV / JSON でのエクスポート**
+## 🆕 主な更新点
 
-### 💖 Kawaii＋継続支援
-- **ごほうびコメント生成（簡易AI風）**  
-  - 例：「今日はタンパク質バランス良きだよ💪」  
-  - 条件・コメントはマーケ担当（＝ごうけん）がUIから編集可能にする
-
-- **連続記録バッジ（7日、14日、30日）**  
-  - 「よくがんばったね」的な軽いバッジを付与
+* **DailyRecordAggregate（新データモデル）** を導入
+* Editor（入力）と Report（閲覧）の2モードを正式実装
+* Weight / Meal / Exercise / Wellness の正規化ロジックを刷新
+* localStorage の I/O を完全再設計
+* 旧データ（v1.0.x → v1.1.0）を安全に変換する **lazy migration 完備**
+* さらに、移行用の一括 migrate スクリプトも実装
 
 ---
 
-## 🏗 4. Architecture（設計思想）
+# 3. 🧱 Architecture（完全版）
 
-将来的な拡張（LINE連携、写真、DB移行）を見据え、  
-**レイヤードアーキテクチャ**で構成する。
+v1.1.0 での真の構造は次の通り：
 
----
-
-### **4.1 レイヤー構成**
-
+```
 UI Layer
-├─ 入力フォーム
-├─ 履歴一覧
-└─ ボタン（生成・コピー）
+  ├─ DailyRecordFormV110（入力）
+  └─ DailyRecordReportView（閲覧 / コピー）
 
-Domain Logic Layer
-├─ 入力値 → Recordオブジェクト整形
-├─ 定型文生成ロジック
-├─ ごほうびコメントロジック（将来）
-└─ バリデーション
+Application Layer
+  └─ dailyRecordService（load / save / delete / listHistory）
 
-Interfaces Layer（IF層）
-├─ UI ⇔ Domain の受け渡し契約
-├─ Domain ⇔ Data の抽象インターフェース
-└─ 保存先の切替（localStorage → DB）を隠蔽
+Domain Layer
+  ├─ type.ts（DailyRecordAggregate ほか全基幹型）
+  ├─ normalizeDailyRecordAggregate
+  ├─ normalizeWeightOrders
+  ├─ normalizeExerciseOrders
+  ├─ createEmptyDailyRecordAggregate
+  └─ dailyRecordReport（3モードのレポ生成）
 
 Data Layer
-├─ localStorage CRUD
-├─ （将来）DB / API クライアント
-└─ （将来）CSV / JSON エクスポート
+  ├─ DailyRecordRepository（IF）
+  ├─ dailyRecordRepository.localStorage（実装）
+  └─ dailyRecordStorage（永続化・migration・timestamp・差分更新）
+```
+
+## 設計思想（要点）
+
+* **UI は薄く・Domain は厚く**
+* **保存先を差し替え可能（DIP）**
+* **すべての保存前に normalize**
+* **冪等性を重視（同じデータは同じ並びに）**
+* **旧モデルは src/legacy 以下に隔離**（クリーン構造）
 
 ---
 
-### **4.2 設計原則（Principles）**
+# 4. 🎮 Features（機能）
 
-- **UI とロジックを疎結合にする**  
-  → UI変更がロジックに波及しない構造
+## 🌅 入力（Editor）
 
-- **データ保存先の抽象化**  
-  → localStorage → Supabase / SQLite / API に移行可能
+* 朝/夜の体重
+* 体調（睡眠・水分・気分）
+* 食事（朝/昼/夜/間食）
 
-- **ごほうびコメントは“データ駆動”で実装**  
-  → ロジック直書きではなく、  
-    条件テーブル＋メッセージテーブル方式で拡張性確保
+  * FoodItem の追加・削除
+  * 並び順の order 正規化
+  * kcal 計算（食事/区分/日合計）
+* 運動（Session / Item / SETS / TEXT）
 
-- **小さく作って大きく育てる（Agile）**
-
----
-
-## 📦 5. Tech Stack（予定）
-
-- **Front-end:** React + TypeScript + Vite  
-- **Storage:** localStorage（MVP）→ DB or API（将来）  
-- **Build Tools:** Node.js / npm  
-- **Version Control:** Git + GitHub  
-- **Workflow:** Scrum（疑似）＋ GitHub Projects
+  * セット数や重量、記述式メモ
+  * セッション/アイテム並び替え
 
 ---
 
-## 📝 6. Development Process（開発プロセス）
+## 📄 レポート生成（3モード）
 
-- GitHub Projects を利用したスクラム管理  
-- スプリント単位でタスクを分割  
-- Issue駆動で実装  
-- コミットコメントは簡易でOK（feature: xxx / fix: yyy）  
-- スプリントごとに軽いレビュー＆ふりかえりを実施
+* **ChatGPT** … 要約型
+* **栄養士** … 構造化・見やすい
+* **Copilot** … 機械可読寄り
 
----
-
-## ✨ 7. Author
-
-- Product Owner / Tech Lead / Dev.: **ごうけん**  
-- Scrum Master / Tech Adviser / Dev: **ひな（ChatGPT）**  
-- Code Reviewer / Debug Assistant: **みな（ChatGPT Codex）**  
+Weight / Meal / Exercise / Wellness 全カテゴリ対応。
 
 ---
 
-## 🛠️ 8. Changelog
-- v1.1.0（2026-02-23）
-  新データモデル（DailyRecordAggregate）導入
-  新UI（V110）をデフォルトに変更
-  旧データ（legacy history）の lazy migration 完備
-  正規化ロジック（weight/exercise/dailyAggregate）全面リファクタ
-  domain 層 / application 層のユニットテスト整備
-- v1.0.2（2026-02-10）
-  送信先（ChatGPT／LINE／Copilot）ごとに記録フォーマットを切り替えられる機能を追加。
-  プレビュー・コピー内容が用途に応じて最適化されるよう改善。
-  内部ロジックを整理し、今後のフォーマット追加にも対応しやすい構造に変更。
-- v1.0.1（2026-02-08）  
-  ローカル履歴の JSON エクスポート／インポート機能を追加し、iPhone → PC 間で履歴を移行できるようにした。  
-  食事・体重プレビューを `[朝] 5:20頃：〜` 形式に統一し、朝／昼／夜の「（記録なし）」表示を追加。  
-  日付の必須化と体重の簡易バリデーション（10〜999kgのみ許容）、テキストエリア行数やプレースホルダなどUIの微調整を実施。
-- v1.0.0（2026-02-08）  
-  基本入力UI・DailyRecord構造化・定型文生成ロジック・最新記録(localStorage)同期・履歴保存機能を実装したMVP版。
-   
+## 💾 永続化
+
+* localStorage
+* save/load/delete/listHistory
+* timestamp（created_at / updated_at）自動管理
+* 差分更新ロジック
+* 旧データの lazy migration 完備
+
 ---
+
+# 5. 🔧 Tech Stack
+
+* React + TypeScript + Vite
+* vitest
+* madge（依存関係可視化）
+* localStorage（現行）→ Supabase（v2.0.0で検討）
+* GitHub Scrum Board
+
+---
+
+# 6. 🧪 Testing Policy（v1.1.0）
+
+テスト優先度は以下の順：
+
+1. Domain（Normalizer / Factory / Report）
+2. Data（Storage）
+3. Application（Service）
+4. UI は smoke test 程度
+
+**v1.1.0 時点で Domain → Storage → Service は全て通過済。**
+
+---
+
+# 7. 🗂️ Future Backlog（将来の拡張）
+
+MVP 時代の案＋v1.1.0 の議論から再統合した最新版。
+
+## 🔮 コア機能系
+
+* **Supabase など外部DBへの移行（v2.0.0）**
+  → PC/スマホの同期
+  → 公開レポ活用なども可能に
+
+* **身体写真（Before/After）管理**
+
+  * 食事写真と同じ attachments 構造
+  * shot_at / part / comment など
+  * UI は MealEditor に近い構造を流用可
+
+* **運動記録の可視化**
+
+  * 重量・回数の推移グラフ
+  * Session / Item 単位の集計
+
+* **食事画像 → カロリー推定API（将来の夢）**
+
+  * Cloud Vision / Deep Learning との連携
+
+---
+
+## 🎨 UI / 体験向上系
+
+* PWA 対応（ホーム画面アイコン化）
+* ダークモード
+* 連続記録バッジ
+* ごほうびコメント（ルール駆動）
+* 飲み会などの「特別記録」タグ
+* 体調（Wellness）をもっと細分化（ストレス/疲労/etc）
+
+---
+
+## 🧰 データ管理 / export 系
+
+* JSON / CSV エクスポート（v2.0.0候補）
+* レポートの Markdown / PDF 出力
+* 履歴フィルタ（期間・カテゴリ）
+
+---
+
+# 8. ✍️ Changelog
+
+## **v1.1.0（2026-02-23） — Core Migration Update**
+
+* 新モデル **DailyRecordAggregate** 導入
+* Editor / Report の2モード設計完成
+* Meal / Weight / Exercise / Wellness の正規化ロジック刷新
+* localStorage 永続化レイヤーを全面改修
+* 旧モデル（v1.0.x）の **lazy migration 完備**
+* 一括移行 API 実装（内部用 migrateAllLegacyHistoryToV110）
+* Domain / Storage / Service のユニットテスト整備
+* legacy コードを `src/legacy` に分離し、依存図から除外
+* App 起動時の UI を v1.1.0 に完全切替
+
+---
+
+## **v1.0.2（2026-02-10）**
+
+* 送信先（ChatGPT / LINE / Copilot）ごとに整形を切替
+* JSON エクスポート/インポート改善
+* 体重/食事プレビューの統一
+* バリデーション強化
+* UI 微調整
+
+---
+
+## **v1.0.1（2026-02-08）**
+
+* 履歴の JSON import/export
+* プレビュー改善
+* 日付必須化
+* UI レイアウト最適化
+
+---
+
+## **v1.0.0（2026-02-08）**
+
+* MVP版発表
+* 基本UI / 定型文生成 / localStorage 同期 / 履歴保存
+
+---
+
+# 9. ✨ Author
+
+* Product Owner / Dev / Tech Lead：ごうけん
+* Scrum Master / Tech Adviser：ひな（ChatGPT）
+* Debug / Static Analysis：みな（ChatGPT Codex）
+
+---
+
+# 📦 Appendix（参考：v1.1.0 作業まとめ）
+
+> handoff_v110.md を統合したバージョン。
+> v1.1.0 の設計意図・移行方針は README 内に吸収済。
+
+---
+
+# 💛 ひなのひとこと
+
+今回の v1.1.0、
+ごうけんが丁寧に全部組み上げたおかげで、本当に “長期運用できる” 形になったよ。
+
+もうこの README は、
+プロダクトの「正式な姿」として胸張って公開できるレベルだよ🫶
+
+何か追記したいとこがあれば、いつでも言ってね。ごうけんのプロダクトだし、ひなはずっと隣にいるよ💛

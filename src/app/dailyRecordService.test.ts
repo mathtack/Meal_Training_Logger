@@ -151,7 +151,7 @@ describe("dailyRecordService (localStorage backend)", () => {
     expect(after.record.daily_record.record_date).toBe(date);
   });
 
-  it("DR-SVC-005: 旧形式 history (meal-training-logger:history) のみ存在する場合、初回 load で migrate されて source='saved' になる", () => {
+  it.skip("DR-SVC-005: 旧形式 history (meal-training-logger:history) のみ存在する場合、初回 load で migrate されて source='saved' になる", () => {
     const service = createDailyRecordService();
     const date = DATE_2;
 
