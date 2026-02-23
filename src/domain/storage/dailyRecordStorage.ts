@@ -13,6 +13,7 @@ import type {
   MealAttachment,
   FoodItem,
   ExerciseSession,
+  DailyRecordSummary,
 } from "../type";
 import type {
   DailyRecord as LegacyDailyRecord,
@@ -41,6 +42,42 @@ const derror = (...args: unknown[]) => {
   // errorは本番でも見たいなら無条件。DEV限定にしたいなら if(DEBUG_STORAGE) にしてOK
   console.error(...args);
 };
+
+function listDailyRecordSummariesInternal(): DailyRecordSummary[] {
+  const summaries: DailyRecordSummary[] = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(KEY_PREFIX)) continue;
+
+    const json = localStorage.getItem(key);
+    if (!json) continue;
+
+    try {
+      const aggregate = JSON.parse(json) as DailyRecordAggregate;
+      const d = aggregate.daily_record;
+
+      if (!d) continue;
+
+      summaries.push({
+        record_date: d.record_date,
+        updated_at: d.updated_at,
+      });
+    } catch (e) {
+      dlog("Failed to parse daily record for key:", key, e);
+      continue;
+    }
+  }
+
+  // ここでは昇順（古い→新しい）でOK
+  summaries.sort((a, b) => {
+    if (a.record_date < b.record_date) return -1;
+    if (a.record_date > b.record_date) return 1;
+    return 0;
+  });
+
+  return summaries;
+}
 
 /**
  * UUID v4 生成（簡易版）
@@ -635,6 +672,10 @@ export const DailyRecordStorage = {
     if (!legacy) return null;
 
     return migrateAndPersist(date, legacy);
+  },
+
+  listSummaries(): DailyRecordSummary[] {
+    return listDailyRecordSummariesInternal();
   },
 
   save(record: DailyRecordAggregate): void {

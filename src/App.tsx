@@ -1,8 +1,9 @@
 // src/App.tsx
-import { DailyRecordForm } from "./components/DailyRecordForm";
 import { DailyRecordFormV110 } from "./ui/DailyRecordFormV110";
+// 旧フォームが完全に不要になったら、この import は削除してOK
+// import { DailyRecordForm } from "./components/DailyRecordForm";
 
 export default function App() {
-  const useV110 = import.meta.env.DEV;
-  return useV110 ? <DailyRecordFormV110 /> : <DailyRecordForm />;
+  // 常に v1.1.0 のフォームを表示
+  return <DailyRecordFormV110 />;
 }

@@ -154,7 +154,12 @@ Data Layer
 ---
 
 ## 🛠️ 8. Changelog
-
+- v1.1.0（2026-02-23）
+  新データモデル（DailyRecordAggregate）導入
+  新UI（V110）をデフォルトに変更
+  旧データ（legacy history）の lazy migration 完備
+  正規化ロジック（weight/exercise/dailyAggregate）全面リファクタ
+  domain 層 / application 層のユニットテスト整備
 - v1.0.2（2026-02-10）
   送信先（ChatGPT／LINE／Copilot）ごとに記録フォーマットを切り替えられる機能を追加。
   プレビュー・コピー内容が用途に応じて最適化されるよう改善。

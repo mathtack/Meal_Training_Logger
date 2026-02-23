@@ -14,26 +14,19 @@ export const normalizeWeightOrders = (agg: DailyRecordAggregate): DailyRecordAgg
   const weightsWithIdx = agg.weights.map((w, idx) => ({ w, idx }));
 
   const sorted = weightsWithIdx.slice().sort((a, b) => {
-    const ao = a.w.measurement_order;
-    const bo = b.w.measurement_order;
-
-    // 1) 既存 order が両方あるならそれ優先
-    if (Number.isFinite(ao) && Number.isFinite(bo)) return (ao as number) - (bo as number);
-    // 2) 片方だけあるなら、ある方を先に
-    if (Number.isFinite(ao)) return -1;
-    if (Number.isFinite(bo)) return 1;
-
-    // 3) なければ time_slot
+    // 1) measurement_time_slot
     const sr = slotRank(a.w.measurement_time_slot) - slotRank(b.w.measurement_time_slot);
     if (sr !== 0) return sr;
 
-    // 4) measured_at（nullは後ろ）
-    const at = a.w.measured_at ?? "";
-    const bt = b.w.measured_at ?? "";
-    if (at !== bt) return at < bt ? -1 : 1;
-
-    // 5) 最後は元の配列順で安定化
-    return a.idx - b.idx;
+    // 2) measured_at（nullは後ろ）
+    const at = a.w.measured_at ?? null;
+    const bt = b.w.measured_at ?? null;
+    // 3) measured_at が同値なら元の配列順で安定化
+    if (at === bt) return a.idx - b.idx;
+    if (at === null) return 1;
+    if (bt === null) return -1;
+    if (at < bt) return -1;
+    return 1;
   });
 
   const weights = sorted.map(({ w }, newIdx) => ({

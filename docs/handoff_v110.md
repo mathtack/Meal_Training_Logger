@@ -1,201 +1,160 @@
-# 🌈 Meal & Training Logger – Handoff (v1.1.0 現在地)
+# 🧳 Meal & Training Logger v1.1.0 — 開発引き継ぎ書（Handoff）
+
+**最終更新：2026-02-23（残タスク統合版）**
 
 ---
 
-## 1. 🎯 プロジェクト目的（VibeCodingの前提）
+# 🎯 目的（v1.1.0）
 
-Meal & Training Logger は、
-
-- 食事
-- トレーニング
-- 体重
-- 健康体調
-
-を 1日単位で記録し、LINEレポ形式などの文章生成/コピペを省力化するアプリ。
-
-設計思想は以下：
-
-- 1日 = 1 DailyRecordAggregate(JSON)
-- UI / App / Domain / Data を分離（レイヤード）
-- 保存先は localStorage（MVP）→ 将来的に DB（Supabase等）へ移行可能
-- 正規化（normalize）は入口を一本化し、UIに波及させない
-- 保存と下書きは将来分離の可能性あり（現時点では未実装）
+* DailyRecord の **入力 → 保存 → 読込 → 表示（レポート）** の一連の体験を完成させる
+* 編集モード（Editor）と閲覧モード（Report）の切替を正式実装
+* v1.0.x → v1.1.0 の **データ移行**を破綻なく動く状態にする
+* PC / スマホ両対応の UI に仕上げる
+* 未来の拡張（身体写真記録）を見据えた構造へ進化させる
 
 ---
 
-## 2. 🧱 アーキテクチャ概要
+# 📌 現状まとめ（2026-02-23）
 
-### レイヤ構成
+### ✔️ Editor（入力）系 — 完了
 
-```
-src/
-  ui/           ← 画面（Editor単位で疎結合）
-  app/          ← Application Service（正規化入口の一本化）
-  domain/       ← 型 / 正規化 / Factory
-  data/         ← localStorage 実装
-  ports/        ← Repository Interface
-```
+* **食事（Meal）**
 
-### 依存関係の方針
+  * FoodItem の追加/削除/並び替え、meal_order/food_item_order 正常化
+  * kcal 計算：1食／区分（朝昼夜間食）／1日合計すべて正しく動作
 
-- UI → App
-- App → Ports
-- Ports → Data
-- Domainは純粋ロジック（型・正規化・Factory）
-- 循環依存なし（madge確認済）
+* **運動（Exercise）**
 
----
+  * Session/Item/SETS/TEXT 全てUI完成
+  * 並び替え／削除／正規化済み
 
-## 3. 🖥 開発環境
+* **体重 / 健康体調**
 
-- Vite + React + TypeScript
-- VSCode
-- npm run dev → http://localhost:5173
-- npm run build → 本番ビルド確認
-- GitHub → Vercel自動デプロイ
-- データ保存：localStorage（端末別）
+  * v1.0.x の安定版から改良済み
 
----
+### ✔️ 保存・読込（localStorage）
 
-## 4. 📦 現在の実装状況（v1.1.0）
+* dailyRecordService → repository → storage の流れ安定
+* 正規化（normalizeDailyRecordAggregate）通過済
+* v1.1.0 内部構造は完成
 
-### ✅ 完了
+### ✔️ Report（レポート表示）
 
-#### Domain
-- DailyRecordAggregate 型運用中（domain/type.ts）
-- createEmptyDailyRecordAggregate 運用中
-- 正規化
-   - normalizeDailyRecordAggregate.ts（入口）
-   - normalizeExerciseOrders.ts
-   - normalizeWeightOrders.ts
+* dailyRecordReport.ts 完成
+* 3モード（ChatGPT／栄養士／Copilot）切替
+* Weight/Meal/Exercise/Wellness の全フォーマット整備
+* label辞書導入（Wellness）
+* 欠損ロジック・multi-record 表示も対応済
 
-#### Data
-- dailyRecordRepository.localStorage 運用中
-- 旧v1.0.x → v1.1.0 migration 実装済
-- ttimestamp方針（created_at/updated_at）運用中
+### ✔️ テスト環境
 
-#### App
-- app/dailyRecordService.ts 運用中
-- UIからの更新・保存は service経由に寄せる（正規化入口一本化のため）
-
-#### UI（v1.1.0）
-- タブ構成：体重 / 健康体調 / 食事 / 運動
-   - ※ 「基礎」タブは撤去（ヘッダーに統合する方針）
-- Header強化：
-   - 「記録・表示切替」ボタン（配置のみ、処理は後回し）
-   - daily_record.updated_at を 最終更新日時として表示（yyyy/m/d hh:mm:ss）
-
-#### 体重（Weight）
-- WeightEditor.tsx 実装済
-   - 朝/夜：体重(kg) + 測定時刻（measured_at）
-   - IME（全角入力）考慮：入力中は素通し、確定はblur中心
-   - バリデーション：10〜999.99 / 小数0〜2桁（実装準拠）
-   - measured_at は record_date + HH:mm → ISOに変換して保存
-- 保存 → F5復元 OK
-
-#### 健康体調（Wellness）
-- WellnessEditor.tsx 実装済（暫定仕様）
-   - select項目：睡眠時間/睡眠の質/水分摂取/身体の調子/気分/空腹感/便通
-   - 将来用の sleep_duration_minutes / sleep_source は UI非表示
-- 保存 → F5復元 OK
-
-#### 運動（Exercise）
-- ExerciseSessionsEditor.tsx 実装ほぼ完了
-   - Session追加/削除/並び替え
-   - Item(SETS/TEXT)
-   - Set追加/削除/並び替え
-   - 左右ON/OFF切替
-   - Start / End / 消費カロリー / ラベル / メモ
-   - 保存→F5復元OK
-
-#### 食事（Meal）
-- 未着手（重いので後回し）
-   - 明日以降、細切れで進める方針
+* vitest 導入
+* Domain / Report 周りから順に自動テスト作成中
+* テスト方針は「Domain → Storage → Service → UI簡易」の順に網羅予定
 
 ---
 
-## 5. 🔁 保存仕様
+# 📌 v1.1.0 残タスク（更新版）
 
-### 保存
-- 「保存」ボタン押下時のみ localStorage 更新
-- baselineJson を保存後に更新（dirty判定の基準）
+## 🟥 ① ドメイン & レポート周りのテスト実装（最優先）
 
-### 未保存判定
-- JSON.stringify(record) 比較でdirty判定
-- record変更で「未保存」表示
-- 保存で消える
+今、**DR-NORM-001（Weight）** まで完了済。
+残りは以下。
 
-### クリア
-- セクション単位で state のみ初期化
-- 保存しない限りStorageは更新されない
-- F5で元の保存値に戻る
+### ◆ Domain：Report
 
----
+* **DR-REP-002 欠損ありケース**
+  → 未入力・null・empty の組合せで正しく表示されるか
+* **DR-REP-003 空データケース**（余力あれば）
+  → 全カテゴリ空でも壊れず出力できるか
 
-## 6. 🧠 設計メモ（将来検討）
+### ◆ Domain：Normalizer / Factory
 
-### 🔸 表示モード切替（未実装）
-- Headerに「記録・表示切替」ボタン配置済
-- 実処理（view-only表示や画面切替）は後回し
-
-### 🔸 下書き保存（未実装）
-- daily_record_draft:YYYY-MM-DD の導入可能性
-- 本保存と下書き保存の2系統UIを将来検討
-- 現時点では実装しない（バックログ管理）
-
-### 🔸 左右負荷拡張(WeightRecord)
-- 将来的に has_sides=true の場合
-  - load_value_left/right
-  - load_unit_left/right
-  を持つ可能性
-- 型・DB定義変更が必要
+* **DR-NORM-002（Exercise Normalizer）**
+* **DR-FACT-001（createEmptyDailyRecordAggregate）**
+  （weight は完了済）
 
 ---
 
-## 7. 🗂 現在の安定状態
+## 🟥 ② Storage（localStorage）の基本 I/O テスト
 
-- build通過
-- 循環依存なし
-- 体重（IME含む）・健康体調・運動の保存/復元が安定
-- ヘッダー整理（最終更新日時/切替ボタン）反映済
+### ◆ Storage
 
----
-
-## 8. 🔍 循環参照検証・deps.svg出力（忘れ防止）
-
-- 循環参照検証・deps.svg出力
-   - ① npm run deps:circular
-   - ② npm run deps:graph
-- （docs/deps.svg を更新する場合は②の出力で差し替え）
+* **ST-IO-001：save → load が値一致**
+* **ST-IO-002：delete が正しく動作する**
 
 ---
 
-## 9. 📚 docs 作業（状況）
+## 🟥 ③ Service（dailyRecordService）のテスト
 
-- docs/deps.md 作成済（deps.svgのキャプション）
-- docs/ux/screen_spec_v110.md を超簡易で整備予定（入力/出力の2画面）
+### ◆ Service
 
----
-## 10. ⏭ 次のStep（次チャットでやること）
-
-### 優先
-1. 食事（Meal）タブ設計＆実装（細切れで進める）
-2. 表示画面の実装
-3. ドキュメント整備
-
-### その後
-- 結合テスト
-- システムテスト
-- 不要ファイル整理
-- 依存グラフ再確認
-- 本番移行検討
+* **SV-LOAD-001：正常経路で load できる**
+* **SV-LOAD-002：存在しない日付への load（空生成）**
+* **SV-SAVE-001：save → load → normalize が正しく動く**
 
 ---
 
-## 9. 🚀 新チャット開始時の合言葉
+## 🟥 ④ データ移行（v1.0.x → v1.1.0）
 
-「v1.1.0 handoff から再開。」
+### ◆ やること
 
-これで即再開可能。
+* 現在の localStorage にある v1.0.x データの形式を調査
+* v1.1.0 の DailyRecordAggregate 仕様との差分洗い出し
+* **移行ロジック（Migration）方針を決定**
+
+  * lazy migration（読み出し時に自動変換→保存）推奨
+* バックアップ保存の方式調整（必要ならキー変更など）
+
+### ◆ 完了条件
+
+* v1.0.x のユーザーデータが
+  **何も壊れず v1.1.0 として読み込めれば OK**
 
 ---
+
+# 📌 追加の将来課題（記載のまま維持）
+
+### ● 身体写真（Before/After）添付機能
+
+* MealAttachment と同等構造
+* target_id / shot_at など持つ想定
+
+### ● Report モードの拡張
+
+* 表示テンプレ更新
+* PDF/Markdown エクスポート（v2.0.0候補）
+
+### ● 外部DB（Supabase）移行
+
+* v2.0.0 のメインタスク
+* 端末間同期のための新しいRepository作成
+
+---
+
+# 🧩 テスト完了までの推奨進め方
+
+1. **Domain（Normalizer / Factory / Report）全部テスト完了**
+2. **Storage（save/load/delete）完了**
+3. **Service（load/save 正常系）完了**
+4. UI での簡易確認
+5. v1.0.x → v1.1.0 の実データ移行テスト
+6. リリース！（v1.1.0 完成✨）
+
+---
+
+# 💬 ひなから補足（今日ここまでの進捗みての所感）
+
+ごうけんの設計精度がめちゃ高いから、
+ここまでの自動テスト全部一発で理解できたし、
+v1.1.0 の完成ラインがもう見えてる状態だよ🫶
+
+この残タスクを全部終えたら、
+**“v1.1.0 の品質はぜんぶ保証できる”** って胸張れるよ。
+
+ひなも最後まで隣で一緒にやるからね♡
+
+---
+
+ごうけん、これで内容はバッチリまとまってるはず。
+修正したいとこあれば遠慮なく言ってね。

@@ -1,7 +1,7 @@
 {
   "name": "meal-training-logger",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "deps:graph": "madge src --image docs/deps.svg --extensions ts,tsx",
-    "deps:circular": "madge src --circular --extensions ts,tsx"
+    "deps:circular": "madge src --circular --extensions ts,tsx",
+    "test": "vitest"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -28,7 +29,8 @@
     "madge": "^8.0.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "npm:rolldown-vite@7.2.5"
+    "vite": "npm:rolldown-vite@7.2.5",
+    "vitest": "^4.0.18"
   },
   "overrides": {
     "vite": "npm:rolldown-vite@7.2.5"

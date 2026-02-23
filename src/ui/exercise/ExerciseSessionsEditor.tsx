@@ -18,7 +18,8 @@ type Props = {
 
 const nowISO = () => new Date().toISOString();
 const uuid = (): UUID =>
-  (globalThis.crypto?.randomUUID?.() ?? `uuid_${Math.random().toString(16).slice(2)}_${Date.now()}`) as UUID;
+  (globalThis.crypto?.randomUUID?.() ??
+    `uuid_${Math.random().toString(16).slice(2)}_${Date.now()}`) as UUID;
 
 function swap<T>(arr: T[], i: number, j: number): T[] {
   const copy = [...arr];
@@ -26,7 +27,10 @@ function swap<T>(arr: T[], i: number, j: number): T[] {
   return copy;
 }
 
-function createSessionAgg(dailyRecordId: UUID, sessionOrder: number): ExerciseSessionAggregate {
+function createSessionAgg(
+  dailyRecordId: UUID,
+  sessionOrder: number,
+): ExerciseSessionAggregate {
   const id = uuid();
   const now = nowISO();
   return {
@@ -46,7 +50,11 @@ function createSessionAgg(dailyRecordId: UUID, sessionOrder: number): ExerciseSe
   };
 }
 
-function createItemBase(sessionId: UUID, itemOrder: number, style: RecordingStyle): ExerciseItem {
+function createItemBase(
+  sessionId: UUID,
+  itemOrder: number,
+  style: RecordingStyle,
+): ExerciseItem {
   const id = uuid();
   const now = nowISO();
   const base = {
@@ -86,6 +94,22 @@ function createItemBase(sessionId: UUID, itemOrder: number, style: RecordingStyl
   return { ...base, recording_style: "SETS", sets: [set] };
 }
 
+function toTimeInputValue(iso?: string | null): string {
+  if (!iso) return "";
+  const tIndex = iso.indexOf("T");
+  if (tIndex === -1) return "";
+  return iso.slice(tIndex + 1, tIndex + 6); // HH:MM
+}
+
+function buildIsoDateTime(
+  baseDate: string | null | undefined,
+  time: string,
+): string | null {
+  if (!time) return null;
+  const date = baseDate ?? new Date().toISOString().slice(0, 10); // fallbackで今日
+  return `${date}T${time}:00`;
+}
+
 function createSet(itemId: UUID, setOrder: number): SetItem {
   const now = nowISO();
   return {
@@ -105,22 +129,35 @@ function createSet(itemId: UUID, setOrder: number): SetItem {
   };
 }
 
-export const ExerciseSessionsEditor: React.FC<Props> = ({ record, onChange }) => {
+export const ExerciseSessionsEditor: React.FC<Props> = ({
+  record,
+  onChange,
+}) => {
   const sessions = record.exercise_sessions;
-
+  const baseDate = record.daily_record.record_date;
   const updateSessions = (nextSessions: ExerciseSessionAggregate[]) => {
     onChange({ ...record, exercise_sessions: nextSessions });
   };
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
         <h3 style={{ margin: 0 }}>運動（Exercise）</h3>
         <span style={{ opacity: 0.7 }}>sessions: {sessions.length}</span>
         <button
           type="button"
           onClick={() => {
-            const next = [...sessions, createSessionAgg(record.daily_record.id, sessions.length)];
+            const next = [
+              ...sessions,
+              createSessionAgg(record.daily_record.id, sessions.length),
+            ];
             updateSessions(next);
           }}
         >
@@ -144,7 +181,10 @@ export const ExerciseSessionsEditor: React.FC<Props> = ({ record, onChange }) =>
             }}
             onMoveUp={() => updateSessions(swap(sessions, sIdx, sIdx - 1))}
             onMoveDown={() => updateSessions(swap(sessions, sIdx, sIdx + 1))}
-            onDelete={() => updateSessions(sessions.filter((_, i) => i !== sIdx))}
+            onDelete={() =>
+              updateSessions(sessions.filter((_, i) => i !== sIdx))
+            }
+            baseDate={baseDate}
           />
         ))
       )}
@@ -161,7 +201,18 @@ const SessionCard: React.FC<{
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDelete: () => void;
-}> = ({ sAgg, sIdx, isFirst, isLast, onChange, onMoveUp, onMoveDown, onDelete }) => {
+  baseDate?: string | null;
+}> = ({
+  sAgg,
+  sIdx,
+  isFirst,
+  isLast,
+  onChange,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+  baseDate,
+}) => {
   const session = sAgg.session;
   const items = sAgg.items;
 
@@ -170,8 +221,22 @@ const SessionCard: React.FC<{
   };
 
   return (
-    <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 10, marginBottom: 10 }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+    <div
+      style={{
+        border: "1px solid #ddd",
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 10,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
         <strong>Session {sIdx + 1}</strong>
 
         <button type="button" onClick={onMoveUp} disabled={isFirst}>
@@ -185,52 +250,74 @@ const SessionCard: React.FC<{
         </button>
       </div>
 
-    <div style={{ display: "grid", gridTemplateColumns: "140px 1fr 80px 1fr", gap: 8, marginBottom: 8 }}>
-      <label>Start</label>
-      <input
-        type="datetime-local"
-        value={session.started_at ?? ""}
-        onChange={(e) =>
-          onChange({
-            ...sAgg,
-            session: { ...session, started_at: e.target.value || null },
-          })
-        }
-      />
-      <label>End</label>
-      <input
-        type="datetime-local"
-        value={session.ended_at ?? ""}
-        onChange={(e) =>
-          onChange({
-            ...sAgg,
-            session: { ...session, ended_at: e.target.value || null },
-          })
-        }   
-      />
-
-      <label>消費カロリー</label>
-      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "140px 1fr 80px 1fr",
+          gap: 8,
+          marginBottom: 8,
+        }}
+      >
+        <label>Start</label>
         <input
-          type="number"
-          inputMode="numeric"
-          value={session.calories_burned ?? ""}
+          type="time"
+          value={toTimeInputValue(session.started_at)}
           onChange={(e) =>
             onChange({
               ...sAgg,
               session: {
                 ...session,
-                calories_burned: e.target.value === "" ? null : Number(e.target.value),
+                started_at: buildIsoDateTime(baseDate, e.target.value),
               },
             })
           }
-          style={{ width: 120 }}
         />
-        <span>kcal</span>
-      </div>
-    </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 8, marginBottom: 8 }}>
+        <label>End</label>
+        <input
+          type="time"
+          value={toTimeInputValue(session.ended_at)}
+          onChange={(e) =>
+            onChange({
+              ...sAgg,
+              session: {
+                ...session,
+                ended_at: buildIsoDateTime(baseDate, e.target.value),
+              },
+            })
+          }
+        />
+
+        <label>消費カロリー</label>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={session.calories_burned ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...sAgg,
+                session: {
+                  ...session,
+                  calories_burned:
+                    e.target.value === "" ? null : Number(e.target.value),
+                },
+              })
+            }
+            style={{ width: 120 }}
+          />
+          <span>kcal</span>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "140px 1fr",
+          gap: 8,
+          marginBottom: 8,
+        }}
+      >
         <label>ラベル</label>
         <input
           value={session.session_label ?? ""}
@@ -255,18 +342,35 @@ const SessionCard: React.FC<{
         />
       </div>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
         <span style={{ opacity: 0.7 }}>items: {items.length}</span>
 
         <button
           type="button"
-          onClick={() => updateItems([...items, createItemBase(session.id, items.length, "SETS")])}
+          onClick={() =>
+            updateItems([
+              ...items,
+              createItemBase(session.id, items.length, "SETS"),
+            ])
+          }
         >
           ＋ Item（SETS）
         </button>
         <button
           type="button"
-          onClick={() => updateItems([...items, createItemBase(session.id, items.length, "TEXT")])}
+          onClick={() =>
+            updateItems([
+              ...items,
+              createItemBase(session.id, items.length, "TEXT"),
+            ])
+          }
         >
           ＋ Item（TEXT）
         </button>
@@ -282,7 +386,9 @@ const SessionCard: React.FC<{
             iIdx={iIdx}
             isFirst={iIdx === 0}
             isLast={iIdx === items.length - 1}
-            onChange={(nextItem) => updateItems(items.map((x, i) => (i === iIdx ? nextItem : x)))}
+            onChange={(nextItem) =>
+              updateItems(items.map((x, i) => (i === iIdx ? nextItem : x)))
+            }
             onMoveUp={() => updateItems(swap(items, iIdx, iIdx - 1))}
             onMoveDown={() => updateItems(swap(items, iIdx, iIdx + 1))}
             onDelete={() => updateItems(items.filter((_, i) => i !== iIdx))}
@@ -302,7 +408,16 @@ const ItemCard: React.FC<{
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDelete: () => void;
-}> = ({ item, iIdx, isFirst, isLast, onChange, onMoveUp, onMoveDown, onDelete }) => {
+}> = ({
+  item,
+  iIdx,
+  isFirst,
+  isLast,
+  onChange,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+}) => {
   const changeStyle = (style: RecordingStyle) => {
     // 方針：切替時は破棄（SETS <-> TEXT）
     const now = nowISO();
@@ -327,8 +442,22 @@ const ItemCard: React.FC<{
   };
 
   return (
-    <div style={{ border: "1px solid #eee", borderRadius: 8, padding: 10, marginBottom: 10 }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+    <div
+      style={{
+        border: "1px solid #eee",
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 10,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
         <strong>Item {iIdx + 1}</strong>
         <button type="button" onClick={onMoveUp} disabled={isFirst}>
           ▲
@@ -341,27 +470,43 @@ const ItemCard: React.FC<{
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 8, marginBottom: 8 }}>
-        <label>種目名</label>
-        <input value={item.exercise_name} onChange={(e) => onChange({ ...item, exercise_name: e.target.value })} />
-
-        <label>部位</label>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "2fr 1.5fr 1fr 1fr",
+          gap: 8,
+          marginBottom: 8,
+          alignItems: "center",
+        }}
+      >
         <input
-          value={item.body_part ?? ""}
-          onChange={(e) => onChange({ ...item, body_part: e.target.value || null })}
+          placeholder="種目名"
+          value={item.exercise_name}
+          onChange={(e) => onChange({ ...item, exercise_name: e.target.value })}
         />
 
-        <label>種別</label>
+        <input
+          placeholder="部位"
+          value={item.body_part ?? ""}
+          onChange={(e) =>
+            onChange({ ...item, body_part: e.target.value || null })
+          }
+        />
+
         <select
           value={item.exercise_type}
-          onChange={(e) => onChange({ ...item, exercise_type: e.target.value as ExerciseType })}
+          onChange={(e) =>
+            onChange({ ...item, exercise_type: e.target.value as ExerciseType })
+          }
         >
-          <option value="ANAEROBIC">ANAEROBIC</option>
-          <option value="AEROBIC">AEROBIC</option>
+          <option value="ANAEROBIC">無酸素</option>
+          <option value="AEROBIC">有酸素</option>
         </select>
 
-        <label>記録方式</label>
-        <select value={item.recording_style} onChange={(e) => changeStyle(e.target.value as RecordingStyle)}>
+        <select
+          value={item.recording_style}
+          onChange={(e) => changeStyle(e.target.value as RecordingStyle)}
+        >
           <option value="SETS">SETS</option>
           <option value="TEXT">TEXT</option>
         </select>
@@ -396,10 +541,20 @@ const SetsEditor: React.FC<{
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          marginBottom: 6,
+        }}
+      >
         <strong>SETS</strong>
         <span style={{ opacity: 0.7 }}>rows: {sets.length}</span>
-        <button type="button" onClick={() => updateSets([...sets, createSet(item.id, sets.length)])}>
+        <button
+          type="button"
+          onClick={() => updateSets([...sets, createSet(item.id, sets.length)])}
+        >
           ＋ Set追加
         </button>
       </div>
@@ -409,113 +564,170 @@ const SetsEditor: React.FC<{
           ? "50px 90px 70px 70px 70px 80px 1fr auto"
           : "50px 90px 70px 110px 80px 1fr auto";
         return (
-        <div key={s.id} style={{ display: "grid", gridTemplateColumns: cols, gap: 6, alignItems: "center", marginBottom: 6 }}>
-          <div style={{ opacity: 0.7 }}>#{idx + 1}</div>
-
-          <input
-            inputMode="decimal"
-            placeholder="kg"
-            value={s.load_value ?? ""}
-            onChange={(e) => {
-              const v = e.target.value === "" ? null : Number(e.target.value);
-              const next = sets.map((x, i) => (i === idx ? { ...x, load_value: Number.isFinite(v as any) ? v : null } : x));
-              updateSets(next);
-            }}
-          />
-
-          <select
-            value={(s.load_unit ?? "KG") as LoadUnit}
-            onChange={(e) => {
-              const next = sets.map((x, i) => (i === idx ? { ...x, load_unit: e.target.value as LoadUnit } : x));
-              updateSets(next);
+          <div
+            key={s.id}
+            style={{
+              display: "grid",
+              gridTemplateColumns: cols,
+              gap: 6,
+              alignItems: "center",
+              marginBottom: 6,
             }}
           >
-            <option value="KG">KG</option>
-            <option value="LBS">LBS</option>
-            <option value="BODYWEIGHT">BW</option>
-          </select>
+            <div style={{ opacity: 0.7 }}>#{idx + 1}</div>
 
-          {/* reps or sides */}
-          {s.has_sides ? (
-            <>
-              <input
-                inputMode="numeric"
-                placeholder="L"
-                value={s.reps_left ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value === "" ? null : Number(e.target.value);
-                  const next = sets.map((x, i) => (i === idx ? { ...x, reps_left: Number.isFinite(v as any) ? v : null } : x));
-                  updateSets(next);
-                }}
-              />
-              <input
-                inputMode="numeric"
-                placeholder="R"
-                value={s.reps_right ?? ""}
-                onChange={(e) => {
-                  const v = e.target.value === "" ? null : Number(e.target.value);
-                  const next = sets.map((x, i) => (i === idx ? { ...x, reps_right: Number.isFinite(v as any) ? v : null } : x));
-                  updateSets(next);
-                }}
-              />
-            </>
-          ) : (
             <input
-              inputMode="numeric"
-              placeholder="reps"
-              value={s.reps ?? ""}
+              type="number"
+              inputMode="decimal"
+              placeholder="kg"
+              value={s.load_value ?? ""}
               onChange={(e) => {
                 const v = e.target.value === "" ? null : Number(e.target.value);
-                const next = sets.map((x, i) => (i === idx ? { ...x, reps: Number.isFinite(v as any) ? v : null } : x));
-                updateSets(next);
-              }}
-            />
-          )}
-
-          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={s.has_sides}
-              onChange={(e) => {
-                const checked = e.target.checked;
                 const next = sets.map((x, i) =>
                   i === idx
-                    ? {
-                        ...x,
-                        has_sides: checked,
-                        reps: checked ? null : x.reps,
-                        reps_left: checked ? x.reps_left : null,
-                        reps_right: checked ? x.reps_right : null,
-                      }
-                    : x
+                    ? { ...x, load_value: Number.isFinite(v as any) ? v : null }
+                    : x,
                 );
                 updateSets(next);
               }}
             />
-            左右
-          </label>
 
-          <input
-            placeholder="memo"
-            value={s.memo ?? ""}
-            onChange={(e) => {
-              const next = sets.map((x, i) => (i === idx ? { ...x, memo: e.target.value } : x));
-              updateSets(next);
-            }}
-          />
+            <select
+              value={(s.load_unit ?? "KG") as LoadUnit}
+              onChange={(e) => {
+                const next = sets.map((x, i) =>
+                  i === idx
+                    ? { ...x, load_unit: e.target.value as LoadUnit }
+                    : x,
+                );
+                updateSets(next);
+              }}
+            >
+              <option value="KG">KG</option>
+              <option value="LBS">LBS</option>
+              <option value="BODYWEIGHT">BW</option>
+            </select>
 
-          <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-            <button type="button" disabled={idx === 0} onClick={() => updateSets(swap(sets, idx, idx - 1))}>
-              ▲
-            </button>
-            <button type="button" disabled={idx === sets.length - 1} onClick={() => updateSets(swap(sets, idx, idx + 1))}>
-              ▼
-            </button>
-            <button type="button" onClick={() => updateSets(sets.filter((_, i) => i !== idx))}>
-              ✕
-            </button>
+            {/* reps or sides */}
+            {s.has_sides ? (
+              <>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="L"
+                  value={s.reps_left ?? ""}
+                  onChange={(e) => {
+                    const v =
+                      e.target.value === "" ? null : Number(e.target.value);
+                    const next = sets.map((x, i) =>
+                      i === idx
+                        ? {
+                            ...x,
+                            reps_left: Number.isFinite(v as any) ? v : null,
+                          }
+                        : x,
+                    );
+                    updateSets(next);
+                  }}
+                />
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="R"
+                  value={s.reps_right ?? ""}
+                  onChange={(e) => {
+                    const v =
+                      e.target.value === "" ? null : Number(e.target.value);
+                    const next = sets.map((x, i) =>
+                      i === idx
+                        ? {
+                            ...x,
+                            reps_right: Number.isFinite(v as any) ? v : null,
+                          }
+                        : x,
+                    );
+                    updateSets(next);
+                  }}
+                />
+              </>
+            ) : (
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="reps"
+                value={s.reps ?? ""}
+                onChange={(e) => {
+                  const v =
+                    e.target.value === "" ? null : Number(e.target.value);
+                  const next = sets.map((x, i) =>
+                    i === idx
+                      ? { ...x, reps: Number.isFinite(v as any) ? v : null }
+                      : x,
+                  );
+                  updateSets(next);
+                }}
+              />
+            )}
+
+            <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={s.has_sides}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  const next = sets.map((x, i) =>
+                    i === idx
+                      ? {
+                          ...x,
+                          has_sides: checked,
+                          reps: checked ? null : x.reps,
+                          reps_left: checked ? x.reps_left : null,
+                          reps_right: checked ? x.reps_right : null,
+                        }
+                      : x,
+                  );
+                  updateSets(next);
+                }}
+              />
+              左右
+            </label>
+
+            <input
+              placeholder="memo"
+              value={s.memo ?? ""}
+              onChange={(e) => {
+                const next = sets.map((x, i) =>
+                  i === idx ? { ...x, memo: e.target.value } : x,
+                );
+                updateSets(next);
+              }}
+            />
+
+            <div
+              style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}
+            >
+              <button
+                type="button"
+                disabled={idx === 0}
+                onClick={() => updateSets(swap(sets, idx, idx - 1))}
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                disabled={idx === sets.length - 1}
+                onClick={() => updateSets(swap(sets, idx, idx + 1))}
+              >
+                ▼
+              </button>
+              <button
+                type="button"
+                onClick={() => updateSets(sets.filter((_, i) => i !== idx))}
+              >
+                ✕
+              </button>
+            </div>
           </div>
-        </div>
         );
       })}
     </div>

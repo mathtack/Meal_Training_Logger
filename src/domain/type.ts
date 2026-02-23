@@ -19,6 +19,11 @@ export interface DailyRecord {
   updated_at: ISODateTime;
 }
 
+export interface DailyRecordSummary {
+  record_date: ISODate;
+  updated_at: ISODateTime;
+}
+
 export interface WeightRecord {
   id: UUID;
   daily_record_id: UUID;
@@ -68,6 +73,7 @@ export interface MealAttachment {
 export interface FoodItem {
   id: UUID;
   meal_record_id: UUID;
+  food_item_order: number; // ★0始まり・必須推奨
   food_name: string;
   food_amount: number;            // decimal → number
   food_amount_unit: string;
@@ -78,7 +84,6 @@ export interface FoodItem {
   created_at: ISODateTime;
   updated_at: ISODateTime;
 }
-
 
 // ==============================
 // Exercise Base Types

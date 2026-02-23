@@ -15,4 +15,7 @@ export const dailyRecordRepositoryLocalStorage: DailyRecordRepository = {
   delete(date: ISODate): void {
     DailyRecordStorage.delete(date);
   },
+    listSummaries() {
+    return DailyRecordStorage.listSummaries();
+  },
 };
