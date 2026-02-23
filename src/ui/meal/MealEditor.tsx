@@ -35,6 +35,38 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+// eaten_at (ISO文字列) → "HH:MM"（time input用）
+function timeInputFromEatenAt(eatenAt?: string | null): string {
+  if (!eatenAt) return "";
+  // "YYYY-MM-DDTHH:MM" 形式が入っている前提でまずは素直にパース
+  const m = eatenAt.match(/T(\d{2}):(\d{2})/);
+  if (m) {
+    return `${m[1]}:${m[2]}`;
+  }
+
+  const d = new Date(eatenAt);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(11, 16); // "HH:MM"
+}
+
+// record_date + "HH:MM" → eaten_at (ISO文字列)
+function buildEatenAtFromDateAndTime(
+  recordDate: string,
+  timeHHMM: string,
+  prev?: string | null,
+): string {
+  // 既存 eaten_at に日付があればそれを優先、なければ record_date
+  const baseDate =
+    prev && /^\d{4}-\d{2}-\d{2}/.test(prev) ? prev.slice(0, 10) : recordDate;
+
+  const [hhRaw = "00", mmRaw = "00"] = timeHHMM.split(":");
+  const hh = hhRaw.padStart(2, "0");
+  const mm = mmRaw.padStart(2, "0");
+
+  // タイムゾーンは今の用途だと厳密でなくてOKなので Z 固定
+  return `${baseDate}T${hh}:${mm}:00.000Z`;
+}
+
 function calcMealCalories(meal: MealAggregate): number {
   const items = meal.food_items ?? [];
   return items.reduce((sum, fi) => sum + (fi.food_calorie ?? 0), 0);
@@ -144,6 +176,35 @@ export function MealEditor(props: {
           }
         : m,
     );
+    updateMeals(next);
+  };
+
+  const setMealTime = (mealId: string, timeHHMM: string) => {
+    const t = nowIso();
+    const recordDate = record.daily_record.record_date;
+
+    const next = (record.meals ?? []).map((m) => {
+      if (m.meal_record.id !== mealId) return m;
+
+      const eatenAt =
+        timeHHMM.trim() === ""
+          ? null
+          : buildEatenAtFromDateAndTime(
+              recordDate,
+              timeHHMM,
+              m.meal_record.eaten_at ?? null,
+            );
+
+      return {
+        ...m,
+        meal_record: {
+          ...m.meal_record,
+          eaten_at: eatenAt,
+          updated_at: t,
+        },
+      };
+    });
+
     updateMeals(next);
   };
 
@@ -293,7 +354,27 @@ export function MealEditor(props: {
               <div style={{ opacity: 0.7, fontSize: 12 }}>未入力</div>
             ) : (
               list.map((m, i) => (
-                <div key={m.meal_record.id} style={{ marginTop: 8 }}>
+                <div key={m.meal_record.id}>
+                  {/* 食べた時間 */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <label style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                      食べた時間
+                    </label>
+                    <input
+                      type="time"
+                      value={timeInputFromEatenAt(m.meal_record.eaten_at)}
+                      onChange={(e) => setMealTime(m.meal_record.id, e.target.value)}
+                    />
+                  </div>
+
+                  {/* メモ */}
                   <textarea
                     ref={catIdx === 0 && i === 0 ? firstFocusRef : undefined}
                     value={m.meal_record.meal_memo ?? ""}
@@ -302,6 +383,8 @@ export function MealEditor(props: {
                     rows={2}
                     style={{ width: "100%" }}
                   />
+
+                  {/* 削除ボタン */}
                   <div
                     style={{
                       display: "flex",
