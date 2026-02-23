@@ -652,6 +652,71 @@ function migrateAndPersist(date: ISODate, legacy: LegacyDailyRecord): DailyRecor
   return migrated;
 }
 
+// 既存：migrateAndPersist のすぐ下あたりに追加すると分かりやすい
+export type LegacyMigrationResultV110 = {
+  migratedDates: ISODate[];
+  alreadyMigratedDates: ISODate[];
+  skippedDates: ISODate[];
+};
+
+/**
+ * legacy history 全体を v1.1.0 形式に一括移行する。
+ *
+ * - 既に daily_record:YYYY-MM-DD がある日は上書きしない（idempotent）
+ * - legacy 側で同一日付が 0 件 or 複数件のものはスキップ
+ * - JSON 壊れているなどの異常は skippedDates に積む
+ */
+export function migrateAllLegacyHistoryToV110(): LegacyMigrationResultV110 {
+  const result: LegacyMigrationResultV110 = {
+    migratedDates: [],
+    alreadyMigratedDates: [],
+    skippedDates: [],
+  };
+
+  const history = loadLegacyHistory();
+  if (!history) {
+    dlog("[migration] no legacy history found.");
+    return result;
+  }
+
+  // legacy history 内の「日付の一覧」をユニークに集める
+  const dateSet = new Set<ISODate>();
+  for (const entry of history) {
+    if (!isLegacy(entry)) continue;
+    if (typeof entry.date !== "string") continue;
+    dateSet.add(entry.date as ISODate);
+  }
+
+  for (const date of dateSet) {
+    const key = keyOf(date);
+
+    // 既に v1.1.0 形式がある日は上書きしない
+    if (localStorage.getItem(key)) {
+      result.alreadyMigratedDates.push(date);
+      continue;
+    }
+
+    const legacy = findUniqueLegacyByDate(history, date);
+    if (!legacy) {
+      // 件数 0 or 複数件など、findUniqueLegacyByDate が null を返したケース
+      result.skippedDates.push(date);
+      continue;
+    }
+
+    try {
+      migrateAndPersist(date, legacy);
+      result.migratedDates.push(date);
+    } catch (e) {
+      derror("[migration] failed to migrate legacy record", { date, error: e });
+      result.skippedDates.push(date);
+    }
+  }
+
+  dlog("[migration] done migrateAllLegacyHistoryToV110", result);
+  return result;
+}
+
+
 // ------------------------------
 // Public API
 // ------------------------------
