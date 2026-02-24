@@ -80,15 +80,18 @@ function formatTime(iso: ISODateTime | null | undefined): string | null {
   return `${h}:${m}`;
 }
 
-// eaten_at は UI 保存上「入力した壁時計時刻」を文字列として持つデータが混在するため、
-// レポートではまず生文字列の HH:mm を優先して表示する。
-function formatMealTime(iso: ISODateTime | null | undefined): string | null {
+// eaten_at は「真のUTC」と「壁時計時刻をZ付き文字列で保存した値」が混在しうる。
+// recordDate と eaten_at の日付が一致する場合は後者とみなし、文字列の HH:mm をそのまま使う。
+function formatMealTime(
+  iso: ISODateTime | null | undefined,
+  recordDate: string
+): string | null {
   if (!iso) return null;
   const raw = String(iso);
-  const m = raw.match(/T(\d{2}):(\d{2})/);
-  if (m) {
-    const h = String(Number(m[1]));
-    return `${h}:${m[2]}`;
+  const m = raw.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  if (m && m[1] === recordDate) {
+    const h = String(Number(m[2]));
+    return `${h}:${m[3]}`;
   }
   return formatTime(iso);
 }
@@ -244,11 +247,12 @@ function buildMealsSection(record: DailyRecordAggregate): string {
   lines.push("🍽️ 食事");
 
   // 朝・昼・夜・間食の順
-  lines.push(buildMealSlotLine("BREAKFAST", bySlot.BREAKFAST, true));
-  lines.push(buildMealSlotLine("LUNCH", bySlot.LUNCH, true));
-  lines.push(buildMealSlotLine("DINNER", bySlot.DINNER, true));
+  const recordDate = record.daily_record.record_date;
+  lines.push(buildMealSlotLine("BREAKFAST", bySlot.BREAKFAST, true, recordDate));
+  lines.push(buildMealSlotLine("LUNCH", bySlot.LUNCH, true, recordDate));
+  lines.push(buildMealSlotLine("DINNER", bySlot.DINNER, true, recordDate));
 
-  const snackLine = buildMealSlotLine("SNACK", bySlot.SNACK, false);
+  const snackLine = buildMealSlotLine("SNACK", bySlot.SNACK, false, recordDate);
   if (snackLine) {
     lines.push(snackLine);
   }
@@ -259,7 +263,8 @@ function buildMealsSection(record: DailyRecordAggregate): string {
 function buildMealSlotLine(
   slot: MealSlotKey,
   aggregates: MealAggregate[],
-  showNoRecord: boolean
+  showNoRecord: boolean,
+  recordDate: string
 ): string {
   const label = MEAL_SLOT_LABEL[slot];
 
@@ -281,7 +286,7 @@ function buildMealSlotLine(
 
   sorted.forEach((agg, index) => {
     const meal = agg.meal_record;
-    const time = formatMealTime(meal.eaten_at ?? null);
+    const time = formatMealTime(meal.eaten_at ?? null, recordDate);
 
     const totalCalorie = calcTotalCalories(agg.food_items);
     const kcalStr = formatKcal(totalCalorie);
@@ -376,12 +381,6 @@ function buildExerciseSection(record: DailyRecordAggregate): string {
 }
 
 function isExerciseSessionEmpty(sessionAgg: ExerciseSessionAggregate): boolean {
-  const session = sessionAgg.session;
-
-  // セッションメモがあれば「中身あり」とみなす
-  const hasSessionMemo =
-    typeof session.memo === "string" && session.memo.trim().length > 0;
-
   const items = sessionAgg.items ?? [];
 
   // TEXTスタイルで free_text が入っている item があるか
@@ -397,7 +396,8 @@ function isExerciseSessionEmpty(sessionAgg: ExerciseSessionAggregate): boolean {
     return sets.length > 0;
   });
 
-  return !hasSessionMemo && !hasTextItem && !hasSetsItem;
+  // セッションメモの有無だけでは「中身あり」とみなさない
+  return !hasTextItem && !hasSetsItem;
 }
 
 function buildExerciseSessionHeader(
@@ -443,29 +443,75 @@ function buildExerciseItemLine(item: ExerciseItem): string | null {
       return name;
     }
 
-    // ひとまず「先頭セットの条件 × セット数」でシンプルに表現
-    const first = sets[0];
-    const load = first.load_value;
-    const loadUnit = first.load_unit;
-    const reps = first.reps;
-    const setCount = sets.length;
-
-    const parts: string[] = [name];
-
-    if (typeof load === "number") {
-      const unit = loadUnit === "LBS" ? "lbs" : "kg";
-      parts.push(`${load}${unit}`);
-    }
-
-    if (typeof reps === "number") {
-      parts.push(`x ${reps}rep`);
-    }
-
-    parts.push(`x ${setCount}set`);
-
-    return parts.join(" ");
+    const summary = summarizeSetsForReport(sets);
+    return summary ? `${name} ${summary}` : name;
   }
 
   // 未知のスタイル
   return name;
+}
+
+function summarizeSetsForReport(sets: SetItem[]): string {
+  const sorted = sets.slice().sort((a, b) => a.set_order - b.set_order);
+  const rows = sorted
+    .map((set) => formatSingleSetForReport(set))
+    .filter((s): s is string => Boolean(s));
+
+  if (!rows.length) return "";
+
+  const compressed: Array<{ text: string; count: number }> = [];
+  for (const row of rows) {
+    const prev = compressed[compressed.length - 1];
+    if (prev && prev.text === row) {
+      prev.count += 1;
+    } else {
+      compressed.push({ text: row, count: 1 });
+    }
+  }
+
+  return compressed
+    .map((entry) => (entry.count > 1 ? `${entry.text} x ${entry.count}set` : entry.text))
+    .join(", ");
+}
+
+function formatSingleSetForReport(set: SetItem): string {
+  const parts: string[] = [];
+
+  if (typeof set.load_value === "number") {
+    const unit = set.load_unit === "LBS" ? "lbs" : "kg";
+    parts.push(`${set.load_value}${unit}`);
+  }
+
+  const repsText = formatRepsForReport(set);
+  if (repsText) {
+    parts.push(repsText);
+  }
+
+  return parts.join(" ");
+}
+
+function formatRepsForReport(set: SetItem): string {
+  if (set.has_sides) {
+    const left = set.reps_left;
+    const right = set.reps_right;
+
+    if (typeof left === "number" && typeof right === "number") {
+      if (left === right) {
+        return `x 左右 x ${left}rep`;
+      }
+      return `x (左${left}rep+右${right}rep)`;
+    }
+
+    if (typeof set.reps === "number") {
+      return `x 左右 x ${set.reps}rep`;
+    }
+
+    return "";
+  }
+
+  if (typeof set.reps === "number") {
+    return `x ${set.reps}rep`;
+  }
+
+  return "";
 }

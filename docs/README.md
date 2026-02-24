@@ -194,6 +194,9 @@ MVP 時代の案＋v1.1.0 の議論から再統合した最新版。
 
 # 8. ✍️ Changelog
 
+## **v1.1.1（2026-02-24） **
+* UIの不具合を修正
+
 ## **v1.1.0（2026-02-23） — Core Migration Update**
 
 * 新モデル **DailyRecordAggregate** 導入

@@ -232,6 +232,209 @@ describe("dailyRecordReport", () => {
 
     expect(text).toBe(expected);
   });
+
+  it("運動は Item/Sets に値がない場合、session memo だけでは Session を表示しない", () => {
+    const date = "2026-02-19";
+    const aggregate = createEmptyDailyRecordAggregate(date);
+
+    aggregate.exercise_sessions = [
+      {
+        session: {
+          id: "sess-memo-only",
+          daily_record_id: aggregate.daily_record.id,
+          session_order: 0,
+          started_at: toUtcIso(date, "18:00"),
+          ended_at: toUtcIso(date, "18:30"),
+          memo: "メモのみ",
+          created_at: "2026-02-19T18:00:00.000Z",
+          updated_at: "2026-02-19T18:00:00.000Z",
+        },
+        items: [
+          {
+            id: "item-text-empty",
+            exercise_session_id: "sess-memo-only",
+            item_order: 0,
+            exercise_name: "ウォームアップ",
+            exercise_type: "AEROBIC",
+            recording_style: "TEXT",
+            free_text: "   ",
+            created_at: "2026-02-19T18:00:00.000Z",
+            updated_at: "2026-02-19T18:00:00.000Z",
+          },
+          {
+            id: "item-sets-empty",
+            exercise_session_id: "sess-memo-only",
+            item_order: 1,
+            exercise_name: "スクワット",
+            exercise_type: "ANAEROBIC",
+            recording_style: "SETS",
+            sets: [],
+            created_at: "2026-02-19T18:00:00.000Z",
+            updated_at: "2026-02-19T18:00:00.000Z",
+          },
+        ],
+      },
+    ];
+
+    const text = buildDailyRecordReport(aggregate, {
+      audience: "chatgpt",
+    });
+    const lines = text.split("\n");
+
+    expect(lines.some((l) => l.startsWith("Session #0"))).toBe(false);
+    expect(lines.includes("（記録なし）")).toBe(true);
+  });
+
+  it("SETS の表示が左右フラグと連続同一セット圧縮の仕様に従う", () => {
+    const date = "2026-02-19";
+    const aggregate = createEmptyDailyRecordAggregate(date);
+
+    aggregate.exercise_sessions = [
+      {
+        session: {
+          id: "sess-sets-format",
+          daily_record_id: aggregate.daily_record.id,
+          session_order: 0,
+          started_at: toUtcIso(date, "18:00"),
+          ended_at: toUtcIso(date, "19:00"),
+          memo: null,
+          created_at: "2026-02-19T18:00:00.000Z",
+          updated_at: "2026-02-19T18:00:00.000Z",
+        },
+        items: [
+          {
+            id: "item-no-sides",
+            exercise_session_id: "sess-sets-format",
+            item_order: 0,
+            exercise_name: "スクワット",
+            exercise_type: "ANAEROBIC",
+            recording_style: "SETS",
+            sets: [
+              {
+                id: "set-no-sides",
+                exercise_item_id: "item-no-sides",
+                set_order: 0,
+                load_value: 50,
+                load_unit: "KG",
+                reps: 10,
+                has_sides: false,
+                created_at: "2026-02-19T18:00:00.000Z",
+                updated_at: "2026-02-19T18:00:00.000Z",
+              },
+            ],
+            created_at: "2026-02-19T18:00:00.000Z",
+            updated_at: "2026-02-19T18:00:00.000Z",
+          },
+          {
+            id: "item-sides-diff",
+            exercise_session_id: "sess-sets-format",
+            item_order: 1,
+            exercise_name: "ランジ",
+            exercise_type: "ANAEROBIC",
+            recording_style: "SETS",
+            sets: [
+              {
+                id: "set-sides-diff",
+                exercise_item_id: "item-sides-diff",
+                set_order: 0,
+                load_value: 50,
+                load_unit: "KG",
+                has_sides: true,
+                reps_left: 10,
+                reps_right: 12,
+                created_at: "2026-02-19T18:00:00.000Z",
+                updated_at: "2026-02-19T18:00:00.000Z",
+              },
+            ],
+            created_at: "2026-02-19T18:00:00.000Z",
+            updated_at: "2026-02-19T18:00:00.000Z",
+          },
+          {
+            id: "item-sides-same",
+            exercise_session_id: "sess-sets-format",
+            item_order: 2,
+            exercise_name: "ブルガリアン",
+            exercise_type: "ANAEROBIC",
+            recording_style: "SETS",
+            sets: [
+              {
+                id: "set-sides-same",
+                exercise_item_id: "item-sides-same",
+                set_order: 0,
+                load_value: 50,
+                load_unit: "KG",
+                has_sides: true,
+                reps_left: 10,
+                reps_right: 10,
+                created_at: "2026-02-19T18:00:00.000Z",
+                updated_at: "2026-02-19T18:00:00.000Z",
+              },
+            ],
+            created_at: "2026-02-19T18:00:00.000Z",
+            updated_at: "2026-02-19T18:00:00.000Z",
+          },
+          {
+            id: "item-sides-same-compressed",
+            exercise_session_id: "sess-sets-format",
+            item_order: 3,
+            exercise_name: "レッグプレス",
+            exercise_type: "ANAEROBIC",
+            recording_style: "SETS",
+            sets: [
+              {
+                id: "set-sides-same-compressed-0",
+                exercise_item_id: "item-sides-same-compressed",
+                set_order: 0,
+                load_value: 50,
+                load_unit: "KG",
+                has_sides: true,
+                reps_left: 10,
+                reps_right: 10,
+                created_at: "2026-02-19T18:00:00.000Z",
+                updated_at: "2026-02-19T18:00:00.000Z",
+              },
+              {
+                id: "set-sides-same-compressed-1",
+                exercise_item_id: "item-sides-same-compressed",
+                set_order: 1,
+                load_value: 50,
+                load_unit: "KG",
+                has_sides: true,
+                reps_left: 10,
+                reps_right: 10,
+                created_at: "2026-02-19T18:00:00.000Z",
+                updated_at: "2026-02-19T18:00:00.000Z",
+              },
+              {
+                id: "set-sides-same-compressed-2",
+                exercise_item_id: "item-sides-same-compressed",
+                set_order: 2,
+                load_value: 50,
+                load_unit: "KG",
+                has_sides: true,
+                reps_left: 10,
+                reps_right: 10,
+                created_at: "2026-02-19T18:00:00.000Z",
+                updated_at: "2026-02-19T18:00:00.000Z",
+              },
+            ],
+            created_at: "2026-02-19T18:00:00.000Z",
+            updated_at: "2026-02-19T18:00:00.000Z",
+          },
+        ],
+      },
+    ];
+
+    const text = buildDailyRecordReport(aggregate, {
+      audience: "chatgpt",
+    });
+
+    expect(text).toContain("スクワット 50kg x 10rep");
+    expect(text).toContain("ランジ 50kg x (左10rep+右12rep)");
+    expect(text).toContain("ブルガリアン 50kg x 左右 x 10rep");
+    expect(text).toContain("レッグプレス 50kg x 左右 x 10rep x 3set");
+  });
+
   // DR-REP-004 並び順検証
   it("体重・食事・運動が order フィールドに従った順序で出力される", () => {
     const aggregate: DailyRecordAggregate = {
