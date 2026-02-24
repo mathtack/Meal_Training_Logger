@@ -56,6 +56,13 @@ export const BOWEL_MOVEMENT_LABEL = {
   THREE_OR_MORE: "3回以上",
 } as const;
 
+// 重量単位（LoadUnit）ラベル
+export const LOAD_UNIT_LABEL = {
+  KG: "kg",
+  LBS: "lbs",
+  BODYWEIGHT: "自重",
+} as const;
+
 // ===== 共通ヘルパー =====
 
 type LabelMap = Record<string, string>;

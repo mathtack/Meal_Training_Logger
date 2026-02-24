@@ -123,10 +123,12 @@ export const WeightEditor: React.FC<Props> = ({ record, setRecord, firstFocusRef
 
   const toHHmm = (iso: string | null): string => {
     if (!iso) return "";
-    // "2026-02-15T08:04:37.304Z" とかから "08:04" を抜く
-    // もしローカルで保存してるならパース方式変える必要あるけど、まずはこれでOK
-    const m = iso.match(/T(\d{2}:\d{2})/);
-    return m ? m[1] : "";
+    // UTC ISOをローカル時刻に直して表示する（再blur時の時刻ドリフト防止）
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
   };
 
   useEffect(() => setMorningTime(toHHmm(morning?.measured_at ?? null)), [morning?.measured_at]);

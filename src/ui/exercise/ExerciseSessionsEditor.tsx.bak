@@ -10,7 +10,6 @@ import type {
   SetItem,
   UUID,
 } from "../../domain/type";
-import { LOAD_UNIT_LABEL } from "../../domain/labels/wellnessLabels";
 
 type Props = {
   record: DailyRecordAggregate;

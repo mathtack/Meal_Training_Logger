@@ -80,6 +80,19 @@ function formatTime(iso: ISODateTime | null | undefined): string | null {
   return `${h}:${m}`;
 }
 
+// eaten_at は UI 保存上「入力した壁時計時刻」を文字列として持つデータが混在するため、
+// レポートではまず生文字列の HH:mm を優先して表示する。
+function formatMealTime(iso: ISODateTime | null | undefined): string | null {
+  if (!iso) return null;
+  const raw = String(iso);
+  const m = raw.match(/T(\d{2}):(\d{2})/);
+  if (m) {
+    const h = String(Number(m[1]));
+    return `${h}:${m[2]}`;
+  }
+  return formatTime(iso);
+}
+
 function formatKcal(total: number | null | undefined): string | null {
   if (total == null || Number.isNaN(total)) return null;
   return `${Math.round(total)}kcal`;
@@ -268,7 +281,7 @@ function buildMealSlotLine(
 
   sorted.forEach((agg, index) => {
     const meal = agg.meal_record;
-    const time = formatTime(meal.eaten_at ?? null);
+    const time = formatMealTime(meal.eaten_at ?? null);
 
     const totalCalorie = calcTotalCalories(agg.food_items);
     const kcalStr = formatKcal(totalCalorie);
