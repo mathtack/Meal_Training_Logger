@@ -235,7 +235,7 @@ export function MealEditor(props: {
       const nextOrder =
         Math.max(
           -1,
-          ...items.map((fi: any) => fi.food_item_order ?? -1), // order無しでも動く保険
+          ...items.map((fi: FoodItem) => fi.food_item_order ?? -1), // order無しでも動く保険
         ) + 1;
 
       const added = createEmptyFoodItem({ mealRecordId, order: nextOrder });
@@ -319,11 +319,19 @@ export function MealEditor(props: {
 
   return (
     <div>
-      <h3>食事</h3>
-
-      {/* 1日合計 */}
-      <div style={{ margin: "4px 0 12px", fontSize: 14 }}>
-        1日合計 : <strong>{formatKcal(dailyTotalKcal)}</strong> kcal
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          marginBottom: 12,
+        }}
+      >
+        <h3 style={{ margin: 0 }}>食事</h3>
+        <div style={{ fontSize: 14 }}>
+          1日合計 : <strong>{formatKcal(dailyTotalKcal)}</strong> kcal
+        </div>
       </div>
 
       {CATEGORIES.map((c, catIdx) => {
@@ -337,263 +345,246 @@ export function MealEditor(props: {
 
         return (
           <section key={c.key} style={{ marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <h4 style={{ margin: 0 }}>{c.label}</h4>
-              <button type="button" onClick={() => addMeal(c.key)}>
-                追加
-              </button>
-            </div>
-
-            {/* 朝合計 / 昼合計 / 夜合計 / 間食合計 */}
-            <div style={{ marginTop: 4, fontSize: 13 }}>
-              {c.label}合計 : <strong>{formatKcal(categoryTotalKcal)}</strong>{" "}
-              kcal
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                marginBottom: 4,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <h4 style={{ margin: 0 }}>{c.label}</h4>
+                <span style={{ fontSize: 13 }}>
+                  {c.label}合計 : <strong>{formatKcal(categoryTotalKcal)}</strong>{" "}
+                  kcal
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <button type="button" onClick={() => addMeal(c.key)}>
+                  追加
+                </button>
+              </div>
             </div>
 
             {list.length === 0 ? (
               <div style={{ opacity: 0.7, fontSize: 12 }}>未入力</div>
             ) : (
-              list.map((m, i) => (
-                <div key={m.meal_record.id}>
-                  {/* 食べた時間 */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 4,
-                    }}
-                  >
-                    <label style={{ fontSize: 12, whiteSpace: "nowrap" }}>
-                      食べた時間
-                    </label>
-                    <input
-                      type="time"
-                      value={timeInputFromEatenAt(m.meal_record.eaten_at)}
-                      onChange={(e) => setMealTime(m.meal_record.id, e.target.value)}
-                    />
-                  </div>
+              list.map((m, i) => {
+                // 1食合計 kcal（Food Item がなくても 0 で出る）
+                const mealTotalKcal = calcMealCalories(m);
 
-                  {/* メモ */}
-                  <textarea
-                    ref={catIdx === 0 && i === 0 ? firstFocusRef : undefined}
-                    value={m.meal_record.meal_memo ?? ""}
-                    onChange={(e) => setMemo(m.meal_record.id, e.target.value)}
-                    placeholder="例）オートミール、プロテイン、味噌汁"
-                    rows={2}
-                    style={{ width: "100%" }}
-                  />
-
-                  {/* 削除ボタン */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      marginTop: 4,
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => removeMeal(m.meal_record.id)}
+                return (
+                  <div key={m.meal_record.id}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        marginBottom: 4,
+                      }}
                     >
-                      削除
-                    </button>
-                  </div>
+                      <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
+                        食事 #{i}
+                      </div>
+                      <div style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                        1食合計 : <strong>{formatKcal(mealTotalKcal)}</strong> kcal
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <label style={{ fontSize: 14, fontWeight: 600 }}>食べた時間</label>
+                        <input
+                          type="time"
+                          value={timeInputFromEatenAt(m.meal_record.eaten_at)}
+                          onChange={(e) => setMealTime(m.meal_record.id, e.target.value)}
+                        />
+                      </div>
+                      <textarea
+                        ref={catIdx === 0 && i === 0 ? firstFocusRef : undefined}
+                        value={m.meal_record.meal_memo ?? ""}
+                        onChange={(e) => setMemo(m.meal_record.id, e.target.value)}
+                        placeholder="例）オートミール、プロテイン、味噌汁"
+                        rows={1}
+                        style={{
+                          width: "100%",
+                          flex: 1,
+                          height: 30,
+                          minHeight: 30,
+                          lineHeight: "28px",
+                          resize: "none",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <button type="button" onClick={() => removeMeal(m.meal_record.id)}>
+                          削除
+                        </button>
+                      </div>
+                    </div>
 
-                  {/* Food items */}
-                  <div
-                    style={{
-                      marginTop: 8,
-                      padding: 8,
-                      border: "1px solid #ddd",
-                      borderRadius: 8,
-                    }}
-                  >
-                    {(() => {
-                      const items = m.food_items ?? [];
-                      const mealTotalKcal = calcMealCalories(m);
-
-                      return (
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 8,
-                          }}
-                        >
-                          <div style={{ fontSize: 12, opacity: 0.8 }}>
-                            Food items: {items.length}
-                            {items.length > 0 && (
-                              <span style={{ marginLeft: 8 }}>
-                                / 1食合計 :{" "}
-                                <strong>{formatKcal(mealTotalKcal)}</strong>{" "}
-                                kcal
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => addFoodItem(m.meal_record.id)}
-                          >
-                            + Food item追加
-                          </button>
-                        </div>
-                      );
-                    })()}
-
-                    {(m.food_items ?? [])
-                      .slice()
-                      .sort((a: any, b: any) => {
-                        const ao = a.food_item_order ?? 0;
-                        const bo = b.food_item_order ?? 0;
-                        if (ao !== bo) return ao - bo;
-                        return (a.id ?? "").localeCompare(b.id ?? "");
-                      })
-                      .map((fi: any, idx: number, arr) => (
-                        <div
-                          key={fi.id}
-                          style={{
-                            marginTop: 8,
-                            display: "grid",
-                            gridTemplateColumns:
-                              "0.5fr 1.5fr 0.6fr 0.6fr 0.6fr 1.0fr",
-                            gap: 8,
-                            alignItems: "center",
-                          }}
-                        >
-                          {/* #番号 */}
-                          <div style={{ opacity: 0.7 }}>
-                            #{fi.food_item_order ?? idx}
-                          </div>
-                          {/* 食材名 */}
-                          <input
-                            value={fi.food_name ?? ""}
-                            onChange={(e) =>
-                              updateFoodItem(m.meal_record.id, fi.id, {
-                                food_name: e.target.value,
-                              })
-                            }
-                            placeholder="食材名"
-                            style={{ width: "100%" }}
-                          />
-
-                          {/* 食べた量 */}
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            step="0.1"
-                            value={
-                              fi.food_amount === 0 ? "" : String(fi.food_amount)
-                            }
-                            onChange={(e) =>
-                              updateFoodItem(m.meal_record.id, fi.id, {
-                                food_amount:
-                                  e.target.value === ""
-                                    ? 0
-                                    : Number(e.target.value),
-                              })
-                            }
-                            placeholder="食べた量(数字)"
-                            style={{ width: "100%" }}
-                          />
-
-                          {/* 単位 */}
-                          <input
-                            value={fi.food_amount_unit ?? ""}
-                            onChange={(e) =>
-                              updateFoodItem(m.meal_record.id, fi.id, {
-                                food_amount_unit: e.target.value,
-                              })
-                            }
-                            placeholder="単位"
-                            style={{ width: "100%" }}
-                          />
-
-                          {/* kcal */}
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            step="1"
-                            value={
-                              fi.food_calorie === 0
-                                ? ""
-                                : String(fi.food_calorie)
-                            }
-                            onChange={(e) =>
-                              updateFoodItem(m.meal_record.id, fi.id, {
-                                food_calorie:
-                                  e.target.value === ""
-                                    ? 0
-                                    : Number(e.target.value),
-                              })
-                            }
-                            placeholder="摂取カロリー(数字)"
-                            style={{ width: "100%" }}
-                          />
-
-                          {/* ▲▼＋削除を1カラムにまとめる */}
+                    <div
+                      style={{
+                        marginTop: 8,
+                        padding: 8,
+                        border: "1px solid #ddd",
+                        borderRadius: 8,
+                      }}
+                    >
+                      {(() => {
+                        const items = m.food_items ?? [];
+                        return (
                           <div
                             style={{
                               display: "flex",
-                              gap: 4,
-                              justifyContent: "flex-end",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 8,
                             }}
                           >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                moveFoodItem(m.meal_record.id, fi.id, "up")
-                              }
-                              disabled={idx === 0}
-                              style={{
-                                width: 50,
-                                height: 40,
-                                padding: 0,
-                                fontSize: 15,
-                                lineHeight: "1",
-                              }}
-                              title="一つ上へ"
-                            >
-                              ▲
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                moveFoodItem(m.meal_record.id, fi.id, "down")
-                              }
-                              disabled={idx === (arr?.length ?? 0) - 1}
-                              style={{
-                                width: 50,
-                                height: 40,
-                                padding: 0,
-                                fontSize: 15,
-                                lineHeight: "1",
-                              }}
-                              title="一つ下へ"
-                            >
-                              ▼
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                removeFoodItem(m.meal_record.id, fi.id)
-                              }
-                              style={{
-                                minWidth: 70,
-                                height: 40,
-                                padding: "0 6px",
-                                fontSize: 15,
-                              }}
-                            >
-                              削除
+                            <div style={{ fontSize: 12, opacity: 0.8 }}>
+                              Food items: {items.length}
+                              {items.length > 0 && (
+                                <span style={{ marginLeft: 8 }}>
+                                  / 1食合計 : <strong>{formatKcal(mealTotalKcal)}</strong> kcal
+                                </span>
+                              )}
+                            </div>
+                            <button type="button" onClick={() => addFoodItem(m.meal_record.id)}>
+                              + Food item追加
                             </button>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })()}
+
+                      {(m.food_items ?? [])
+                        .slice()
+                        .sort((a: FoodItem, b: FoodItem) => {
+                          const ao = a.food_item_order ?? 0;
+                          const bo = b.food_item_order ?? 0;
+                          if (ao !== bo) return ao - bo;
+                          return (a.id ?? "").localeCompare(b.id ?? "");
+                        })
+                        .map((fi: FoodItem, idx: number, arr: FoodItem[]) => (
+                          <div
+                            key={fi.id}
+                            style={{
+                              marginTop: 8,
+                              display: "grid",
+                              gridTemplateColumns: "0.5fr 1.5fr 0.6fr 0.6fr 0.6fr 1.0fr",
+                              gap: 8,
+                              alignItems: "center",
+                            }}
+                          >
+                            <div style={{ opacity: 0.7 }}>#{fi.food_item_order ?? idx}</div>
+                            <input
+                              value={fi.food_name ?? ""}
+                              onChange={(e) =>
+                                updateFoodItem(m.meal_record.id, fi.id, {
+                                  food_name: e.target.value,
+                                })
+                              }
+                              placeholder="食材名"
+                              style={{ width: "100%" }}
+                            />
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              step="0.1"
+                              value={fi.food_amount === 0 ? "" : String(fi.food_amount)}
+                              onChange={(e) =>
+                                updateFoodItem(m.meal_record.id, fi.id, {
+                                  food_amount: e.target.value === "" ? 0 : Number(e.target.value),
+                                })
+                              }
+                              placeholder="食べた量(数字)"
+                              style={{ width: "100%" }}
+                            />
+                            <input
+                              value={fi.food_amount_unit ?? ""}
+                              onChange={(e) =>
+                                updateFoodItem(m.meal_record.id, fi.id, {
+                                  food_amount_unit: e.target.value,
+                                })
+                              }
+                              placeholder="単位"
+                              style={{ width: "100%" }}
+                            />
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              step="1"
+                              value={fi.food_calorie === 0 ? "" : String(fi.food_calorie)}
+                              onChange={(e) =>
+                                updateFoodItem(m.meal_record.id, fi.id, {
+                                  food_calorie: e.target.value === "" ? 0 : Number(e.target.value),
+                                })
+                              }
+                              placeholder="摂取カロリー(数字)"
+                              style={{ width: "100%" }}
+                            />
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 4,
+                                justifyContent: "flex-end",
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => moveFoodItem(m.meal_record.id, fi.id, "up")}
+                                disabled={idx === 0}
+                                style={{
+                                  width: 50,
+                                  height: 40,
+                                  padding: 0,
+                                  fontSize: 15,
+                                  lineHeight: "1",
+                                }}
+                                title="一つ上へ"
+                              >
+                                ▲
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveFoodItem(m.meal_record.id, fi.id, "down")}
+                                disabled={idx === (arr?.length ?? 0) - 1}
+                                style={{
+                                  width: 50,
+                                  height: 40,
+                                  padding: 0,
+                                  fontSize: 15,
+                                  lineHeight: "1",
+                                }}
+                                title="一つ下へ"
+                              >
+                                ▼
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeFoodItem(m.meal_record.id, fi.id)}
+                                style={{
+                                  minWidth: 70,
+                                  height: 40,
+                                  padding: "0 6px",
+                                  fontSize: 15,
+                                }}
+                              >
+                                削除
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </section>
         );

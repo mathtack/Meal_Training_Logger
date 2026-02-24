@@ -38,6 +38,7 @@ export function buildDailyRecordReport(
   record: DailyRecordAggregate,
   _options: DailyRecordReportOptions
 ): string {
+  void _options;
   const sections: string[] = [];
 
   sections.push(buildHeaderSection(record));
@@ -130,10 +131,10 @@ function buildWeightSlotLine(
   weights: WeightRecord[]
 ): string {
   const slotWeights = weights
-    .filter((w) => (w as any).measurement_time_slot === slot)
+    .filter((w) => w.measurement_time_slot === slot)
     .sort((a, b) => {
-      const ao = (a as any).measurement_order ?? 0;
-      const bo = (b as any).measurement_order ?? 0;
+      const ao = a.measurement_order ?? 0;
+      const bo = b.measurement_order ?? 0;
       return ao - bo;
     });
 
@@ -148,10 +149,10 @@ function buildWeightSlotLine(
 
     items.push(`#${index}`);
 
-    const t = formatTime((w as any).measured_at);
+    const t = formatTime(w.measured_at);
     if (t) items.push(t);
 
-    const value = (w as any).weight as number | undefined;
+    const value = w.weight;
     if (typeof value === "number") {
       items.push(`${value}kg`);
     }

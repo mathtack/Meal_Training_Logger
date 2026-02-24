@@ -241,62 +241,16 @@ const SessionCard: React.FC<{
           display: "flex",
           gap: 8,
           alignItems: "center",
+          flexWrap: "wrap",
           marginBottom: 8,
         }}
       >
+        {/* Sessions 1 */}
         <strong>Session {sIdx + 1}</strong>
 
-        <button type="button" onClick={onMoveUp} disabled={isFirst}>
-          ▲
-        </button>
-        <button type="button" onClick={onMoveDown} disabled={isLast}>
-          ▼
-        </button>
-        <button type="button" onClick={onDelete}>
-          削除
-        </button>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "140px 1fr 80px 1fr",
-          gap: 8,
-          marginBottom: 8,
-        }}
-      >
-        <label>Start</label>
-        <input
-          type="time"
-          value={toTimeInputValue(session.started_at)}
-          onChange={(e) =>
-            onChange({
-              ...sAgg,
-              session: {
-                ...session,
-                started_at: buildIsoDateTime(baseDate, e.target.value),
-              },
-            })
-          }
-        />
-
-        <label>End</label>
-        <input
-          type="time"
-          value={toTimeInputValue(session.ended_at)}
-          onChange={(e) =>
-            onChange({
-              ...sAgg,
-              session: {
-                ...session,
-                ended_at: buildIsoDateTime(baseDate, e.target.value),
-              },
-            })
-          }
-        />
-
-        <label>消費カロリー</label>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        {/* 消費カロリー */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <label>消費カロリー</label>
           <input
             type="number"
             inputMode="numeric"
@@ -315,40 +269,99 @@ const SessionCard: React.FC<{
           />
           <span>kcal</span>
         </div>
-      </div>
 
+        {/* Start */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <label>Start</label>
+          <input
+            type="time"
+            value={toTimeInputValue(session.started_at)}
+            onChange={(e) =>
+              onChange({
+                ...sAgg,
+                session: {
+                  ...session,
+                  started_at: buildIsoDateTime(baseDate, e.target.value),
+                },
+              })
+            }
+          />
+        </div>
+
+        {/* End */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <label>End</label>
+          <input
+            type="time"
+            value={toTimeInputValue(session.ended_at)}
+            onChange={(e) =>
+              onChange({
+                ...sAgg,
+                session: {
+                  ...session,
+                  ended_at: buildIsoDateTime(baseDate, e.target.value),
+                },
+              })
+            }
+          />
+        </div>
+
+        {/* ▲ ▼ 削除 */}
+        <button type="button" onClick={onMoveUp} disabled={isFirst}>
+          ▲
+        </button>
+        <button type="button" onClick={onMoveDown} disabled={isLast}>
+          ▼
+        </button>
+        <button type="button" onClick={onDelete}>
+          削除
+        </button>
+      </div>
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "140px 1fr",
+          display: "flex",
           gap: 8,
+          alignItems: "flex-start",
           marginBottom: 8,
+          flexWrap: "wrap",
         }}
       >
-        <label>ラベル</label>
-        <input
-          value={session.session_label ?? ""}
-          onChange={(e) =>
-            onChange({
-              ...sAgg,
-              session: { ...session, session_label: e.target.value },
-            })
-          }
-        />
+        {/* ラベル */}
+        <div style={{ minWidth: 140 }}>
+          <label>ラベル</label>
+          <input
+            value={session.session_label ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...sAgg,
+                session: { ...session, session_label: e.target.value },
+              })
+            }
+          />
+        </div>
 
-        <label>メモ</label>
-        <textarea
-          rows={2}
-          value={session.memo ?? ""}
-          onChange={(e) =>
-            onChange({
-              ...sAgg,
-              session: { ...session, memo: e.target.value },
-            })
-          }
-        />
+        {/* メモ */}
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <label>メモ</label>
+          <textarea
+            rows={1}
+            value={session.memo ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...sAgg,
+                session: { ...session, memo: e.target.value },
+              })
+            }
+            style={{
+              width: "50%",
+              height: 30,
+              minHeight: 30,
+              boxSizing: "border-box",
+              resize: "none",
+            }}
+          />
+        </div>
       </div>
-
       <div
         style={{
           display: "flex",
@@ -480,9 +493,61 @@ const ItemCard: React.FC<{
           gap: 8,
           alignItems: "center",
           marginBottom: 8,
+          flexWrap: "wrap",
         }}
       >
+        {/* Item 1 */}
         <strong>Item {iIdx + 1}</strong>
+
+        {/* 種目名〜SETS/TEXT */}
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <input
+            placeholder="種目名"
+            value={item.exercise_name}
+            onChange={(e) =>
+              onChange({ ...item, exercise_name: e.target.value })
+            }
+          />
+
+          <input
+            placeholder="部位"
+            value={item.body_part ?? ""}
+            onChange={(e) =>
+              onChange({ ...item, body_part: e.target.value || null })
+            }
+          />
+
+          <select
+            value={item.exercise_type}
+            onChange={(e) =>
+              onChange({
+                ...item,
+                exercise_type: e.target.value as ExerciseType,
+              })
+            }
+          >
+            <option value="ANAEROBIC">無酸素</option>
+            <option value="AEROBIC">有酸素</option>
+          </select>
+
+          <select
+            value={item.recording_style}
+            onChange={(e) => changeStyle(e.target.value as RecordingStyle)}
+          >
+            <option value="SETS">SETS</option>
+            <option value="TEXT">TEXT</option>
+          </select>
+        </div>
+
+        {/* ▲ ▼ 削除 */}
         <button type="button" onClick={onMoveUp} disabled={isFirst}>
           ▲
         </button>
@@ -493,49 +558,6 @@ const ItemCard: React.FC<{
           削除
         </button>
       </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1.5fr 1fr 1fr",
-          gap: 8,
-          marginBottom: 8,
-          alignItems: "center",
-        }}
-      >
-        <input
-          placeholder="種目名"
-          value={item.exercise_name}
-          onChange={(e) => onChange({ ...item, exercise_name: e.target.value })}
-        />
-
-        <input
-          placeholder="部位"
-          value={item.body_part ?? ""}
-          onChange={(e) =>
-            onChange({ ...item, body_part: e.target.value || null })
-          }
-        />
-
-        <select
-          value={item.exercise_type}
-          onChange={(e) =>
-            onChange({ ...item, exercise_type: e.target.value as ExerciseType })
-          }
-        >
-          <option value="ANAEROBIC">無酸素</option>
-          <option value="AEROBIC">有酸素</option>
-        </select>
-
-        <select
-          value={item.recording_style}
-          onChange={(e) => changeStyle(e.target.value as RecordingStyle)}
-        >
-          <option value="SETS">SETS</option>
-          <option value="TEXT">TEXT</option>
-        </select>
-      </div>
-
       {item.recording_style === "TEXT" ? (
         <div>
           <label>フリーテキスト</label>
@@ -616,23 +638,23 @@ const SetsEditor: React.FC<{
               }}
             />
 
-<select
-  value={(s.load_unit ?? "KG") as LoadUnit}
-  onChange={(e) => {
-    const next = sets.map((x, i) =>
-      i === idx
-        ? { ...x, load_unit: e.target.value as LoadUnit }
-        : x,
-    );
-    updateSets(next);
-  }}
->
-  {(["KG", "LBS", "BODYWEIGHT"] as LoadUnit[]).map((unit) => (
-    <option key={unit} value={unit}>
-      {LOAD_UNIT_LABEL[unit]}
-    </option>
-  ))}
-</select>
+            <select
+              value={(s.load_unit ?? "KG") as LoadUnit}
+              onChange={(e) => {
+                const next = sets.map((x, i) =>
+                  i === idx
+                    ? { ...x, load_unit: e.target.value as LoadUnit }
+                    : x,
+                );
+                updateSets(next);
+              }}
+            >
+              {(["KG", "LBS", "BODYWEIGHT"] as LoadUnit[]).map((unit) => (
+                <option key={unit} value={unit}>
+                  {LOAD_UNIT_LABEL[unit]}
+                </option>
+              ))}
+            </select>
 
             {/* reps or sides */}
             {s.has_sides ? (
