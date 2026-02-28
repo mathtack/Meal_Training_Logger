@@ -85,6 +85,24 @@ export interface FoodItem {
   updated_at: ISODateTime;
 }
 
+export interface FoodMaterial {
+  id: UUID;
+  food_item_id: UUID;
+  food_material_order: number; // 同一FoodItem内での表示順（0始まり想定）
+
+  food_material_name: string;
+  food_material_amount: number;          // decimal(6,2) → number
+  food_material_amount_unit: string;
+
+  food_material_calorie: number;         // decimal(6,2) → number
+  food_material_protein?: number | null; // decimal(5,2) → number
+  food_material_fat?: number | null;     // decimal(5,2) → number
+  food_material_carbohydrates?: number | null; // decimal(5,2) → number
+
+  created_at: ISODateTime;
+  updated_at: ISODateTime;
+}
+
 // ==============================
 // Exercise Base Types
 // ==============================
