@@ -40,8 +40,8 @@ Magic Link によるログインが正常に行えること、およびログイ
 - ブラウザAでページをリロードしても、ログイン状態が維持されている。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。.env.localの設定、supabase側の設定、vercelの設定をそれぞれ実施
 
 ---
 
@@ -63,8 +63,8 @@ Magic Link によるログインが正常に行えること、およびログイ
 - ページをリロードしても、ログイン状態には戻らず未ログインのままである。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。リロード後もログイン前の状態を確認
 
 ---
 
@@ -85,8 +85,8 @@ Magic Link によるログインが正常に行えること、およびログイ
 - 新規タブでも、ログイン中ユーザーの情報が表示されている（再ログイン不要）。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。
 
 ---
 
@@ -109,8 +109,8 @@ Magic Link によるログインが正常に行えること、およびログイ
 - 少なくとも、Magic Link 経由でログインしようとしても、アプリ側で `userId` が取得できない（ログイン状態にならない）。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。email rate limit exceded
 
 ---
 
@@ -131,8 +131,8 @@ Supabase 側でエラーが起きたときに、アプリが異常終了せず�
 - コンソールにエラー内容が出ている。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。VITE_SUPABASE_URL` などをダミー値に変更した結果、FetchErrorが出力。
 
 ---
 
@@ -165,8 +165,8 @@ DailyRecord を新規保存したときに、UI / localStorage / Supabase の3�
 - `record_json` の中身が、フォームで入力した内容と論理的に一致している（DailyRecordAggregate の構造に沿っている）。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。record_jsonへ該当分が保存されている。なおlocalstorageにも同様に保存されている。
 
 ---
 
@@ -190,8 +190,8 @@ DailyRecord を新規保存したときに、UI / localStorage / Supabase の3�
 - `record_json` 内の変更対象フィールドだけが更新された状態になっている。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。朝体重の変更が、record_json・localstorageいずれにも反映されることを確認。
 
 ---
 
@@ -216,8 +216,8 @@ DailyRecord を新規保存したときに、UI / localStorage / Supabase の3�
 - `daily_record_store` から `user_id = ユーザーA & record_date = 2026-03-01` の行が削除されている。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。record_json・localstorageいずれからも削除されていることを確認
 
 ---
 
@@ -239,7 +239,7 @@ DailyRecord を新規保存したときに、UI / localStorage / Supabase の3�
 
 **結果記入欄**
 - 結果：PASS / FAIL
-- メモ：
+- メモ：ブランチ1.1.2において成功。record_json・localstorage、UIいずれでも保存されていることを確認
 
 ---
 
@@ -271,8 +271,8 @@ DailyRecord を新規保存したときに、UI / localStorage / Supabase の3�
 - 各デバイスの localStorage 状態にかかわらず、最終的なソース・オブ・トゥルースとして Supabase の内容が整合している。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。PC、スマホいずれからも保存した内容が、Supabaseに最新版となることを確認。
 
 ---
 
@@ -298,8 +298,8 @@ DailyRecord を新規保存したときに、UI / localStorage / Supabase の3�
 - API レスポンス上も、ユーザーAの `record_json` が含まれていない（RLS によりフィルタされている）。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。localstorage分は参照できてしまうものの、Supabase分は見えないこと確認済。
 
 ---
 
@@ -321,8 +321,8 @@ DailyRecord を新規保存したときに、UI / localStorage / Supabase の3�
 - （API レベルのテストを行う場合）ユーザーBトークンで A の行を更新 / 削除しようとすると RLS により拒否される。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：ブランチ1.1.2において成功。同線は存在しない。
 
 ---
 
