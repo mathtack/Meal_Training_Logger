@@ -322,7 +322,13 @@ DailyRecord を新規保存したときに、UI / localStorage / Supabase の3�
 
 **結果記入欄**
 - 結果：PASS
-- メモ：ブランチ1.1.2において成功。同線は存在しない。
+- メモ：ブランチ1.1.2において成功。
+ユーザーBとしてログインし、Consoleから Supabase クライアントを使用して、ユーザーAの daily_record_store.id を指定して select('record_json').eq('id', …).single() を実行した。
+
+結果、PGRST116 (The result contains 0 rows) エラーとなり、ユーザーBからは該当IDの行が1件も取得できないことを確認。Supabaseコンソール上では当該IDの行が存在しているため、RLSにより他ユーザーの行がフィルタされていると判断。
+
+同IDに対して delete を実行しても、DB上の行は削除されていないことを確認。
+→ 他ユーザー（A）の記録は、ユーザーBのトークンからは参照・更新・削除できないことを確認。
 
 ---
 

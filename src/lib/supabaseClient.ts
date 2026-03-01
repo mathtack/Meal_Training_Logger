@@ -10,8 +10,3 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// 👇 これを追加（デバッグ用）
-if (typeof window !== 'undefined') {
-  (window as any).supabase = supabase;
-}
