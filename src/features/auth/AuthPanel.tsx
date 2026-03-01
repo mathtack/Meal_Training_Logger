@@ -15,21 +15,29 @@ export const AuthPanel = () => {
     setIsSubmitting(true);
     setStatusMessage(null);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        // Supabase Auth の redirect URL
-        emailRedirectTo: window.location.origin,
-      },
-    });
+    try {
+      // ★ポイント：今開いているオリジンをそのまま使う
+      const redirectTo = `${window.location.origin}/`;
 
-    if (error) {
-      console.error('signInWithOtp error', error);
-      setStatusMessage(`ログインリンク送信に失敗: ${error.message}`);
-    } else {
-      setStatusMessage('ログイン用リンクをメールに送ったよ。メールを確認してね！');
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: redirectTo,
+        },
+      });
+
+      if (error) {
+        console.error(error);
+        setStatusMessage(`ログインリンク送信に失敗: ${error.message}`);
+      } else {
+        setStatusMessage('ログインリンクをメールに送ったよ。メールを確認してね！');
+      }
+    } catch (err) {
+      console.error(err);
+      setStatusMessage('予期せぬエラーが発生したよ…。時間をおいて再試行してみてね。');
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleLogout = async () => {
