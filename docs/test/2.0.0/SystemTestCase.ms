@@ -324,9 +324,7 @@ DailyRecord を新規保存したときに、UI / localStorage / Supabase の3�
 - 結果：PASS
 - メモ：ブランチ1.1.2において成功。
 ユーザーBとしてログインし、Consoleから Supabase クライアントを使用して、ユーザーAの daily_record_store.id を指定して select('record_json').eq('id', …).single() を実行した。
-
 結果、PGRST116 (The result contains 0 rows) エラーとなり、ユーザーBからは該当IDの行が1件も取得できないことを確認。Supabaseコンソール上では当該IDの行が存在しているため、RLSにより他ユーザーの行がフィルタされていると判断。
-
 同IDに対して delete を実行しても、DB上の行は削除されていないことを確認。
 → 他ユーザー（A）の記録は、ユーザーBのトークンからは参照・更新・削除できないことを確認。
 
@@ -353,8 +351,8 @@ Supabase 側で一時的なエラーが発生した場合に、アプリがど�
 - localStorage 側の状態がどうなるか（保存される / 保存されない）は仕様どおりになっている。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：1.1.2で確認済。画面クラッシュせず、エラー表示の上、Supabaseへは保存されない
 
 ---
 
@@ -376,8 +374,13 @@ Supabase 側で一時的なエラーが発生した場合に、アプリがど�
 - オンライン復帰後に、Supabase 上のデータとの整合がとれている（仕様に従う）。
 
 **結果記入欄**
-- 結果：PASS / FAIL
-- メモ：
+- 結果：PASS
+- メモ：1.1.2で確認済。
+Offline 状態で保存すると ERR_INTERNET_DISCONNECTED が発生し、UI でエラー表示が発生。
+UI はクラッシュせず操作継続可能。
+localStorage には（ローカルキャッシュとして）保存されている。
+オンライン復帰後のリロードでは Supabase のサーバーデータが優先され、結果的にローカルの暫定データは破棄された。
+仕様（Source of Truth＝Supabase）に完全一致しており、整合性も問題なし。
 
 ---
 
