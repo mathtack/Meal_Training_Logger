@@ -7,6 +7,12 @@ import { WeightEditor } from "./weights/WeightEditor";
 import { WellnessEditor } from "./wellness/WellnessEditor";
 import { MealEditor } from "./meal/MealEditor";
 import { DailyRecordReportView } from "../domain/report/DailyRecordReportView";
+import { useAuth } from "../features/auth/AuthContext";
+import {
+  saveDailyRecordToSupabase,
+  fetchDailyRecordFromSupabase,
+  deleteDailyRecordFromSupabase,
+} from "../app/dailyRecordSupabaseService";
 
 const dailyRecordService = createDailyRecordService();
 
@@ -97,6 +103,7 @@ function formatUpdatedAt(isoString: string): string {
 }
 
 export const DailyRecordFormV110: React.FC = () => {
+  const { user } = useAuth();
   const [recordDate, setRecordDate] = useState<ISODate>(todayISODate());
   const [tab, setTab] = useState<TabKey>("exercise"); // 最優先が運動なのでここから
   const [record, setRecord] = useState<DailyRecordAggregate>(() => dailyRecordService.load(todayISODate()).record);
@@ -163,19 +170,35 @@ export const DailyRecordFormV110: React.FC = () => {
     []
   );
 
-  const onSave = (): boolean => {
+  const onSave = async (): Promise<boolean> => {
     try {
       setStatus("saving...");
+
+      // ① 今まで通り localStorage / service に保存
       const normalized = dailyRecordService.save(record); // normalized が返る
       setRecord(normalized);
 
-      setStatus("saved");
       setBaselineJson(toJson(normalized));
       setIsDirty(false);
 
-      // 👇 履歴一覧を更新
+      // ② ログイン済みなら Supabase にもバックアップ
+      if (user) {
+        const result = await saveDailyRecordToSupabase({
+          userId: user.id,
+          date: recordDate, // 対象日付の state をそのまま使う
+          record: normalized,
+        });
+
+        if (!result.success) {
+          console.warn("Supabase backup failed:", result.message);
+          // 今は警告ログだけ。将来はトースト出してもよさそう
+        }
+      }
+
+      // ③ 履歴一覧を更新
       reloadHistory();
 
+      setStatus("saved");
       setTimeout(() => setStatus(""), 800);
       return true;
     } catch (e) {
@@ -194,15 +217,26 @@ export const DailyRecordFormV110: React.FC = () => {
     setStatus(`履歴から ${date} の記録を読み込んだよ`);
   };
 
-  const handleDeleteFromHistory = (date: ISODate) => {
+  const handleDeleteFromHistory = async (date: ISODate) => {
     const ok = window.confirm(`${date} の記録を削除する？（元に戻せないよ）`);
     if (!ok) return;
 
+    // ① localStorage 側を削除
     dailyRecordService.delete(date);
     reloadHistory();
+
+    // ② Supabase 側も削除（ログイン中のみ）
+    if (user) {
+      await deleteDailyRecordFromSupabase({
+        userId: user.id,
+        date,
+      });
+    }
+
     setStatus(`${date} の記録を削除したよ`);
 
-    // 必要なら、今開いている日付と同じだった場合のケアをここに足してもOK
+    // 今開いている日付と同じなら、画面の state をクリアするなどもアリ
+    // （必要になったら後で追加しよ）
   };
 
   // 画面初期表示時に履歴一覧をロード
@@ -210,24 +244,57 @@ export const DailyRecordFormV110: React.FC = () => {
     reloadHistory();
   }, []);
 
-  // 日付が変わったらロード（同期）
+  // 日付が変わったらロード（Supabase → localStorage の順で試す）
   useEffect(() => {
-    try {
-      setStatus("loading...");
-      const result = dailyRecordService.load(recordDate);
-      setRecord(result.record);
+    let cancelled = false;
 
-      const base = toJson(result.record);
-      setBaselineJson(base);
-      setIsDirty(false);
-      setMode("edit");
+    const load = async () => {
+      try {
+        setStatus("loading...");
 
-      setStatus("");
-    } catch (e) {
-      console.error(e);
-      setStatus("load failed (see console)");
-    }
-  }, [recordDate]);
+        let loadedRecord: DailyRecordAggregate | null = null;
+
+        // ① ログイン済みなら Supabase からトライ
+        if (user) {
+          const supaResult = await fetchDailyRecordFromSupabase({
+            userId: user.id,
+            date: recordDate,
+          });
+
+          if (supaResult.found) {
+            loadedRecord = supaResult.record;
+          }
+        }
+
+        // ② Supabase に無かった / 未ログインなら localStorage
+        if (!loadedRecord) {
+          const result = dailyRecordService.load(recordDate);
+          loadedRecord = result.record;
+        }
+
+        if (cancelled || !loadedRecord) return;
+
+        setRecord(loadedRecord);
+
+        const base = toJson(loadedRecord);
+        setBaselineJson(base);
+        setIsDirty(false);
+        setMode("edit");
+        setStatus("");
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) {
+          setStatus("load failed (see console)");
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [recordDate, user]);
 
   // タブ切替時：該当セクションの先頭入力にフォーカス
   useEffect(() => {
