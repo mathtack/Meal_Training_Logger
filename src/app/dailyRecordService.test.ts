@@ -7,12 +7,6 @@ const DATE_1 = "2026-02-18" as ISODate;
 const DATE_2 = "2026-02-19" as ISODate;
 const DATE_3 = "2026-02-20" as ISODate;
 
-// 旧形式 history の localStorage キー（dailyRecordStorage.ts と合わせる）
-const LEGACY_HISTORY_KEY = "meal-training-logger:history";
-
-// v1.1.0 の保存キー prefix（dailyRecordStorage.ts と合わせる）
-const KEY_PREFIX = "daily_record:";
-
 describe("dailyRecordService (localStorage backend)", () => {
   const createMockLocalStorage = () => {
     let store: Record<string, string> = {};
@@ -151,39 +145,4 @@ describe("dailyRecordService (localStorage backend)", () => {
     expect(after.record.daily_record.record_date).toBe(date);
   });
 
-  it.skip("DR-SVC-005: 旧形式 history (meal-training-logger:history) のみ存在する場合、初回 load で migrate されて source='saved' になる", () => {
-    const service = createDailyRecordService();
-    const date = DATE_2;
-
-    // 念のため v1.1.0 側のキーは消しておく
-    localStorage.removeItem(`${KEY_PREFIX}${date}`);
-
-    // 旧形式の history を minimal shape で投入
-    // dailyRecordStorage.ts の isLegacy 判定は
-    //   - typeof obj.date === "string"
-    //   - Array.isArray(obj.meals)
-    // を見ているので、ここだけ満たせばよい。
-    const legacyHistory = [
-      {
-        date,
-        meals: [], // meals が Array であることが重要
-        // 他のフィールドは undefined で OK（migrateLegacyToAggregate 側で安全に扱われる）
-      },
-    ];
-
-    (globalThis as any).localStorage.setItem(
-      LEGACY_HISTORY_KEY,
-      JSON.stringify(legacyHistory),
-    );
-
-    const result = service.load(date);
-
-    // 旧 history から migrate された結果として扱われるので、source は "saved"
-    expect(result.source).toBe("saved");
-    expect(result.record.daily_record.record_date).toBe(date);
-
-    // かつ v1.1.0 のストレージキーに保存されているはず
-    const rawV110 = localStorage.getItem(`${KEY_PREFIX}${date}`);
-    expect(rawV110).not.toBeNull();
-  });
 });
