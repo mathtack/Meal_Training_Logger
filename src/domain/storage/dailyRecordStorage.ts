@@ -12,16 +12,9 @@ import type {
   FoodItem,
   DailyRecordSummary,
 } from "../type";
-//import type {
-//  DailyRecord as LegacyDailyRecord,
-//  MealRecord as LegacyMealRecord,
-//  ExerciseRecord as LegacyExerciseRecord,
-//} from "../../legacy/domain/DailyRecord";
 
 // Storage Keys
 const KEY_PREFIX = "daily_record:";
-// const LEGACY_HISTORY_KEY = "meal-training-logger:history";
-// const LEGACY_LATEST_KEY = "meal-training-logger:latestRecord"; // 旧形式の latestRecord は日付特定できないので history の方から探す想定
 
 function keyOf(date: ISODate): string {
   return `${KEY_PREFIX}${date}`; // ← KEY_PREFIXは "daily_record:" なのでコロンは足さない
@@ -71,8 +64,6 @@ function listDailyRecordSummariesInternal(): DailyRecordSummary[] {
 
   return summaries;
 }
-
-// legacy migration helpers are disabled after v1.1.0 release cleanup.
 
 function hasDeletion(prevIds: string[], nextIds: string[]): boolean {
   const nextSet = new Set(nextIds);
@@ -391,9 +382,6 @@ function loadV110(date: ISODate): DailyRecordAggregate | null {
     return null;
   }
 }
-
-// legacy migration API is intentionally disabled.
-
 
 // ------------------------------
 // Public API
