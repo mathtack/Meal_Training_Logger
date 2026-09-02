@@ -18,7 +18,7 @@
 - RLS 確認用に必要であれば2ユーザーを用意する。
 
 保存先は development / production で切り替わらない。未ログイン時は localStorage のみ、ログイン中は localStorage と Supabase JSONB を併用する。
-なお未ログインで localStorage のみ利用する場合でも、Supabase client は起動時に初期化されるため環境変数は必要。
+未ログインで localStorage のみ利用する場合でも、Supabase client は起動時に初期化されるため環境変数は必要。
 
 ## 0. Persistence routing
 
@@ -169,6 +169,5 @@ Expected:
 
 ## Completion
 
-主要シナリオを PASS したら、実施日・対象commit・特記事項を `docs/handoff.md` に記録する。
-
-この文書には過去version固有のmigration試験を保持しない。廃止済みmigrationの履歴は Git history を参照する。
+主要シナリオを PASS したら、現在の baseline や次アクションへ影響する事項だけ `docs/current-state.md` に反映する。
+過去の実施記録をこの文書へ蓄積しない。
