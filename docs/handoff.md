@@ -147,8 +147,12 @@ VITE_SUPABASE_ANON_KEY=
 - obsolete `docs/README.md`
 - obsolete `docs/deps.md`
 - generated `docs/deps.svg`
+- unused Vite template stylesheet `src/App.css`
+- Vite template favicon `public/vite.svg`
 
-`npm run deps:graph` は必要時のみ生成し、graph を設計 SSOT として扱わない。
+`deps:graph` はRepository内・AGENTS・CIで利用されず、削除済みgraphを再生成するだけだったため廃止した。Madgeは `npm run deps:circular` で循環依存検査に引き続き利用する。
+
+`node_modules` はローカルで `npm ci` が生成する依存物であり、Git管理対象ではない。root `.gitignore` の `node_modules` 規則で除外され、tracked fileは0件。ASTRAEAではRepositoryをclone後、`package-lock.json` を使って `npm ci` で再生成する。
 
 ## 6. 現行 persistence / Supabase
 
