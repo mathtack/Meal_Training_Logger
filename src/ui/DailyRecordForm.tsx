@@ -181,7 +181,7 @@ export const DailyRecordForm: React.FC = () => {
       setBaselineJson(toJson(normalized));
       setIsDirty(false);
 
-      // ② ログイン済みなら Supabase にもバックアップ
+      // ② ログイン済みなら Supabase にも remote 保存
       if (user) {
         const result = await saveDailyRecordToSupabase({
           userId: user.id,
@@ -190,7 +190,7 @@ export const DailyRecordForm: React.FC = () => {
         });
 
         if (!result.success) {
-          console.warn("Supabase backup failed:", result.message);
+          console.warn("Supabase remote save failed:", result.message);
           // 今は警告ログだけ。将来はトースト出してもよさそう
         }
       }

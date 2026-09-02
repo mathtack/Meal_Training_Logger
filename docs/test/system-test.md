@@ -17,6 +17,26 @@
 - PC browser と smartphone browser、または独立した2ブラウザを利用できる。
 - RLS 確認用に必要であれば2ユーザーを用意する。
 
+保存先は development / production で切り替わらない。未ログイン時は localStorage のみ、ログイン中は localStorage と Supabase JSONB を併用する。
+なお未ログインで localStorage のみ利用する場合でも、Supabase client は起動時に初期化されるため環境変数は必要。
+
+## 0. Persistence routing
+
+### ROUTE-01 Logged-out localStorage only
+
+1. logout して未ログイン状態にする。
+2. 他のテストと重ならない日付に、識別しやすい値で DailyRecord を入力する。
+3. 保存する。
+4. reload または別日へ移動後に同じ日付を開く。
+5. browser storage の `daily_record:<ISODate>` を確認する。
+6. Network tab で `daily_record_store` への保存 request が発生していないことを確認する。
+
+Expected:
+
+- 入力内容が localStorage から復元される。
+- `daily_record:<ISODate>` に DailyRecordAggregate が JSON 保存されている。
+- 未ログイン状態では Supabase `daily_record_store` への保存を行わない。
+
 ## 1. Authentication
 
 ### AUTH-01 Magic Link login

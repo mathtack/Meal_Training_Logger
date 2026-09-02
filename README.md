@@ -32,6 +32,13 @@ PC と smartphone の両方から利用し、Supabase Auth と Supabase persiste
 
 1日分のデータは `DailyRecordAggregate` として扱う。
 
+保存先は development / production で切り替えていない。Vite の開発環境と Vercel 本番環境では同じ persistence logic が動き、実際の保存・読込経路は主にログイン状態で分岐する。
+
+- 未ログイン: localStorage のみ保存・読込する。
+- ログイン中の保存: localStorage に保存した後、Supabase `daily_record_store.record_json` にも remote 保存する。
+- ログイン中の読込: Supabase を優先し、対象データが無い場合や取得できない場合は localStorage を利用する。
+- Supabase 保存失敗時も、先に完了した localStorage の保存は残る。
+
 Local:
 
 - `src/domain/storage/dailyRecordStorage.ts`
@@ -43,7 +50,9 @@ Supabase:
 - current table: `public.daily_record_store`
 - `user_id + record_date` 単位で `record_json` を upsert
 
-ログイン中の読込は Supabase を優先し、見つからない場合は localStorage を利用する。保存時は localStorage に保存し、ログイン中なら Supabase にも保存する。
+現行の remote persistence は正規化 RDB への行単位保存ではなく、1日分の `DailyRecordAggregate` を JSONB として保存する方式。
+
+Supabase client は development / production を問わず初期化されるため、ローカル開発でも `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が必要。
 
 詳細は `docs/db/README.md` を参照する。
 

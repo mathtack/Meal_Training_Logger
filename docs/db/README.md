@@ -10,10 +10,21 @@
 
 アプリの1日分データの契約は `src/domain/type.ts` の `DailyRecordAggregate` を基準とする。
 
+保存先は development / production で切り替えていない。開発環境と Vercel 本番環境では同じ persistence logic が動作し、保存・読込経路は主にログイン状態で分岐する。
+
+- 未ログイン: localStorage のみを利用する。
+- ログイン中の保存: localStorage に保存した後、Supabase にも remote 保存する。
+- ログイン中の読込: Supabase を優先し、対象データが無い場合や取得できない場合は localStorage を利用する。
+- Supabase 保存失敗時も、先に完了した localStorage の保存は残る。
+
 ローカル保存は `src/domain/storage/dailyRecordStorage.ts` が担当し、localStorage の `daily_record:<ISODate>` に `DailyRecordAggregate` を JSON 保存する。
 
 Supabase への保存・読出・削除は `src/app/dailyRecordSupabaseService.ts` が担当する。
 現行アプリが利用する主要テーブルは `public.daily_record_store` であり、1ユーザー・1日につき1件の `record_json` として `DailyRecordAggregate` を保存する。
+
+現行の remote persistence は正規化 RDB への行単位保存ではなく、JSONB 保存である。正規化テーブル群への persistence は未実装。
+
+Supabase client は development / production を問わず初期化されるため、ローカル開発でも `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が必要。
 
 ### `public.daily_record_store`
 
