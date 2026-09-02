@@ -326,9 +326,7 @@ function buildMealFoodText(items: FoodItem[]): string {
   const names = items.map((i) => i.food_name).filter(Boolean);
   if (!names.length) return "";
 
-  // 以前は #0 をメイン、#1 以降を（）で括っていたが、
-  // v1.1.0 以降はすべて同列に「、」区切りで表示する。
-  // 例）オートミール、牛乳、卵、… のような形式。
+  // FoodItem名はすべて同列に「、」区切りで表示する。
   return names.join("、");
 }
 

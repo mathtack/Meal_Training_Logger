@@ -370,7 +370,7 @@ function applyTimestamps(next: DailyRecordAggregate, prev: DailyRecordAggregate 
   };
 }
 
-function loadV110(date: ISODate): DailyRecordAggregate | null {
+function loadStoredRecord(date: ISODate): DailyRecordAggregate | null {
   const k = keyOf(date);
   const raw = localStorage.getItem(k);
   if (!raw) return null;
@@ -378,7 +378,7 @@ function loadV110(date: ISODate): DailyRecordAggregate | null {
   try {
     return JSON.parse(raw) as DailyRecordAggregate;
   } catch (e) {
-    dwarn(`Failed to parse v1.1.0 record at key ${k}.`, e);
+    dwarn(`Failed to parse daily record at key ${k}.`, e);
     return null;
   }
 }
@@ -390,9 +390,8 @@ function loadV110(date: ISODate): DailyRecordAggregate | null {
 export const DailyRecordStorage = {
 
   get(date: ISODate): DailyRecordAggregate | null {
-    // v1.1.0 only
-    const v110 = loadV110(date);
-    if (v110) return v110;
+    const stored = loadStoredRecord(date);
+    if (stored) return stored;
     return null;
   },
 
