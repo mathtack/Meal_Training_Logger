@@ -24,14 +24,13 @@ Remote instruction
 
 Repository 内の README / AGENTS / docs / code / tests / migration だけで、安全に作業開始できる状態を目標とする。
 
-## Current branch
-
-`codex/version-name-cleanup`
-
-`main` を直接編集しない。
+## Repository state
 
 Repository modernization と Supabase baseline migration は ASTRAEA bootstrap を開始できる水準まで完了している。
 Doc / Agent 構成は 2026-09-03 に簡素化し、Repository 入口を root `README.md` / `AGENTS.md`、詳細仕様を flat な `docs/`、将来の再利用手順を `skills/` に分離した。
+
+ASTRAEA への新規 clone は最新 `main` を正とする。
+`main` を直接作業場所にせず、clone / baseline 確認後の変更は `codex/<task-name>` branch で行う。
 
 ## Baseline
 
@@ -89,7 +88,7 @@ baseline は空の新規 Supabase DB 専用。
 ## Next action: ASTRAEA Bootstrap
 
 1. ASTRAEA で Git / Node.js / Codex CLI を確認
-2. Repository clone
+2. 最新 `main` から Repository clone
 3. `npm ci`
 4. `.env.example` を基に `.env.local` を安全に設定
 5. Supabase 環境変数を設定
@@ -124,9 +123,11 @@ ASTRAEA移送の blocker ではない。
 
 ## Resume commands
 
+既存環境で再開する場合:
+
 ```powershell
 git status
-git switch codex/version-name-cleanup
+git switch main
 git pull --ff-only
 
 npm run build
