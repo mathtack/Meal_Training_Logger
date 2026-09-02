@@ -123,14 +123,6 @@ npm run lint
 
 Repository modernization 中は既知 lint error を増やさないことを最低条件とする。現在の baseline は `docs/handoff.md` を参照する。
 
-Dependency graph が必要な場合のみ以下を実行する。
-
-```powershell
-npm run deps:graph
-```
-
-生成された graph は設計 SSOT として扱わない。
-
 ## Development workflow
 
 `main` を作業場所にしない。
