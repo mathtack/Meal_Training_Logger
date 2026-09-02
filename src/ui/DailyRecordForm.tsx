@@ -1,4 +1,4 @@
-﻿// src/ui/DailyRecordFormV110.tsx
+﻿// src/ui/DailyRecordForm.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { DailyRecordAggregate, ISODate } from "../domain/type";
 import { createDailyRecordService } from "../app/dailyRecordService";
@@ -102,7 +102,7 @@ function formatUpdatedAt(isoString: string): string {
   return `${y}/${m}/${day} ${hh}:${mm}:${ss}`;
 }
 
-export const DailyRecordFormV110: React.FC = () => {
+export const DailyRecordForm: React.FC = () => {
   const { user } = useAuth();
   const [recordDate, setRecordDate] = useState<ISODate>(todayISODate());
   const [tab, setTab] = useState<TabKey>("exercise"); // 最優先が運動なのでここから
@@ -331,7 +331,7 @@ export const DailyRecordFormV110: React.FC = () => {
           >
             {/* 左側：タイトル＆説明 */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <h2 style={{ margin: 0 }}>DailyRecordForm v1.1.0</h2>
+              <h2 style={{ margin: 0 }}>DailyRecordForm</h2>
               <span style={{ fontSize: 12, color: "#666" }}>（運動・食事・体重・体調の1日記録）</span>
             </div>
 
