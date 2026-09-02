@@ -60,6 +60,8 @@ Modernization 中の最低条件:
 - circular dependency を発生させない
 - lint error を 30 から増やさない
 
+source cleanup 後もユーザー環境で baseline に変化がないことを確認済み。
+
 ## 5. 完了した Repository 整理
 
 ### 不要物 / legacy
@@ -83,12 +85,15 @@ Modernization 中の最低条件:
 - アプリ version 自体は継続し、`package.json` を正とする。
 - データ互換性など意味のある version semantics は、意味を確認してから変更する。
 
-今回完了:
+完了:
 
 - `DailyRecordFormV110.tsx` -> `DailyRecordForm.tsx`
 - `DailyRecordFormV110` -> `DailyRecordForm`
 - 画面タイトルの `v1.1.0` 表記撤去
 - App の旧フォームコメントアウト撤去
+- `src/main.tsx` の死んだ `migrateAllLegacyHistoryToV110` コメント撤去
+- `dailyRecordStorage.ts` の `loadV110` / `v110` / `v1.1.0 only` を現行の汎用表現へ変更
+- `dailyRecordReport.ts` の version 由来履歴コメントを現在ルールの説明へ変更
 
 ### DB docs
 
@@ -120,12 +125,22 @@ version 別 Test Plan を撤去し、現行2枚へ統合:
 
 レポート挙動は現行 implementation / automated tests を正とする。
 
-### Repository entry documents
+### Repository entry / setup documents
 
 新規 / 再構築:
 
 - root `README.md`
 - `AGENTS.md`
+- `.env.example`
+
+`.env.example` は以下の必要変数名のみを Git 管理し、実値は含めない。
+
+```text
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+`.env.local` は `.gitignore` の `*.local` で除外される。
 
 撤去:
 
@@ -135,18 +150,31 @@ version 別 Test Plan を撤去し、現行2枚へ統合:
 
 `npm run deps:graph` は必要時のみ生成し、graph を設計 SSOT として扱わない。
 
-## 6. Supabase 現状確認
+## 6. 現行 persistence / Supabase
 
-Supabase project `meal-training-logger` は ACTIVE_HEALTHY。
+重要: 保存先は development / production では分岐していない。開発環境と Vercel 本番環境では同じ persistence logic が動く。
 
-現行 application code が利用する persistence:
+実際の保存・読込経路は主にログイン状態で分岐する。
+
+- 未ログイン: localStorage のみ
+- ログイン中の保存: localStorage に保存後、Supabase にも remote 保存
+- ログイン中の読込: Supabase 優先、対象データが無い場合は localStorage
+- Supabase 保存失敗時も、先に完了した localStorage 保存は残る
+
+Supabase client は development / production を問わず初期化されるため、ローカル開発でも `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` が必要。
+
+現行 application code が利用する remote persistence:
 
 - `public.daily_record_store`
 - `record_json` に `DailyRecordAggregate` を JSONB 保存
 - `user_id + record_date` を upsert key とする
 - RLS enabled
+- 現行 remote persistence は正規化 RDB への行単位保存ではない
 
-2026-09-02 確認時点で `daily_record_store` は 19 rows。
+2026-09-02 確認時点:
+
+- `app_user`: 3 rows
+- `daily_record_store`: 19 rows
 
 Supabase には旧正規化設計由来の以下の table も残存する:
 
@@ -164,35 +192,40 @@ Supabase には旧正規化設計由来の以下の table も残存する:
 確認時点では全て 0 rows で、現行 source の Supabase 保存経路から参照されていない。
 これら10 table は public schema にあり RLS disabled のため、Supabase Security Advisor で ERROR になっている。
 
-このセッションでは live Supabase schema の変更・削除は行っていない。
+`daily_record_store` には `user_id + record_date` に対する UNIQUE 制約が2個あり、将来 migration 化時の整理候補。
 
-今後:
-
-- Git-managed migration を導入する
-- 未使用 table を削除するか将来利用するか決定する
-- 残す場合は RLS を含め安全化する
+この modernization 中、live Supabase schema の変更・削除はまだ行っていない。
 
 ## 7. 次の作業
 
-### 最優先: source 内の残り version / migration 痕跡を整理
+### 最優先: Supabase schema / RLS の Git-managed migration 化
 
-確認済み候補:
+次は現行 Supabase を Git 管理できる baseline migration へ落とす。
 
-- `src/main.tsx`
-  - commented `migrateAllLegacyHistoryToV110` import / window export
-- `src/domain/storage/dailyRecordStorage.ts`
-  - `loadV110()`
-  - `v1.1.0 only`
-  - parse error の `v1.1.0` 表現
-- `src/domain/report/dailyRecordReport.ts`
-  - 過去 version を説明する履歴コメント
+安全のため、まず以下までを行う。
 
-現行処理として意味を持たない履歴由来表現を除去し、変更後 baseline を再確認する。
+1. live Supabase の schema / constraint / index / RLS / policy を再取得する
+2. 現行 application に必要な DB 構成を確定する
+3. Git に baseline migration を作成する
+4. migration 内容をレビューし、現行構成を再現できるか確認する
+
+重要な制約:
+
+- この段階では live Supabase へ DDL を適用しない
+- table / policy / constraint を直接変更・削除しない
+- 既存本番 DB に baseline migration をそのまま再実行しない
+- baseline を既存本番に「適用済み」としてどう管理開始するかは別段階で判断する
+
+未使用の正規化10 table については、まず現状を完全取得する。
+その上で次のどちらを baseline とするか評価する。
+
+- live DB 全体を表す完全 baseline
+- 現行 application に必要な最小 baseline
+
+勝手に削除・採用判断はせず、推奨案を出してから決定する。
 
 ### Step 1 残候補
 
-- `.env.example` 追加
-- Supabase schema / RLS の Git-managed migration 化
 - unused normalized tables の扱い決定
 - lint 30 existing errors の解消
 - GitHub Actions CI 導入
@@ -210,7 +243,8 @@ ASTRAEA に clone しただけで、README / AGENTS / handoff / code / tests か
 - Git / Node.js / Codex CLI 確認
 - Repository clone
 - `npm ci`
-- `.env.local` を安全に設定
+- `.env.example` -> `.env.local`
+- Supabase 環境変数を安全に設定
 - build / tests / circular / lint
 - Vite 起動
 - Supabase Auth / save / load の実画面確認
@@ -242,6 +276,4 @@ npm run deps:circular
 npm run lint
 ```
 
-remote branch は今回の整理コミットで更新されているため、ユーザー環境では再度 `git pull --ff-only` が必要。
-
-baseline と差異がなければ Section 7 の source cleanup から再開する。
+baseline と差異がなければ Section 7 の Supabase baseline migration 化から再開する。
