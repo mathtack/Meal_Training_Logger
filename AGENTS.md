@@ -1,54 +1,90 @@
 # AGENTS.md
 
-**Rule:** In each command, **define → use**. Do **not** escape `$`. Use generic `'path/to/file.ext'`.
+## Read order
 
----
+Before changing the Repository, read:
 
-## 1) READ (UTF‑8 no BOM, line‑numbered)
+1. `README.md`
+2. `docs/handoff.md`
+3. task-relevant code and tests
+4. `docs/db/README.md` or `docs/test/README.md` when relevant
 
-```bash
-bash -lc 'powershell -NoLogo -Command "
-$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false);
-Set-Location -LiteralPath (Convert-Path .);
-function Get-Lines { param([string]$Path,[int]$Skip=0,[int]$First=40)
-  $enc=[Text.UTF8Encoding]::new($false)
-  $text=[IO.File]::ReadAllText($Path,$enc)
-  if($text.Length -gt 0 -and $text[0] -eq [char]0xFEFF){ $text=$text.Substring(1) }
-  $ls=$text -split \"`r?`n\"
-  for($i=$Skip; $i -lt [Math]::Min($Skip+$First,$ls.Length); $i++){ \"{0:D4}: {1}\" -f ($i+1), $ls[$i] }
-}
-Get-Lines -Path \"path/to/file.ext\" -First 120 -Skip 0
-"'
+Do not rely on chat history as the source of truth when Repository state is available.
+
+## Repository rules
+
+- Git is the version-history source of truth.
+- Do not create `old/`, `backup/`, `.bak`, version-suffixed copies, or duplicated current specifications.
+- Do not add version numbers to current source filenames or directory names only for history management.
+- Keep one current SSOT per responsibility.
+- Do not commit generated dependencies such as `node_modules`.
+- Do not commit `.env.local`, credentials, tokens, keys, or user data.
+
+## Git safety
+
+- Do not edit `main` directly.
+- Work on `codex/<task-name>` unless the user explicitly chooses another branch.
+- Before starting a new task from main, require a clean working tree and `git pull --ff-only` success.
+- Stop if main is dirty, cannot fast-forward, or the intended branch is ambiguous.
+- Do not use destructive Git commands (`reset --hard`, force push, history rewrite) without explicit user instruction.
+- Push / PR only when the task or user instruction calls for it.
+
+## Change discipline
+
+Use this cycle:
+
+```text
+inspect references
+  -> make a small change
+  -> verify
+  -> inspect diff
+  -> commit
 ```
 
----
+Do not mix unrelated refactors into a functional change.
 
-## 2) WRITE (UTF‑8 no BOM, atomic replace, backup)
+When specification, implementation, and tests disagree, do not guess silently. Determine which artifact is current before aligning them.
 
-```bash
-bash -lc 'powershell -NoLogo -Command "
-$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false);
-Set-Location -LiteralPath (Convert-Path .);
-function Write-Utf8NoBom { param([string]$Path,[string]$Content)
-  $dir = Split-Path -Parent $Path
-  if (-not (Test-Path $dir)) {
-    New-Item -ItemType Directory -Path $dir -Force | Out-Null
-  }
-  $tmp = [IO.Path]::GetTempFileName()
-  try {
-    $enc = [Text.UTF8Encoding]::new($false)
-    [IO.File]::WriteAllText($tmp,$Content,$enc)
-    Move-Item $tmp $Path -Force
-  }
-  finally {
-    if (Test-Path $tmp) {
-      Remove-Item $tmp -Force -ErrorAction SilentlyContinue
-    }
-  }
-}
-$file = "path/to/your_file.ext"
-$enc  = [Text.UTF8Encoding]::new($false)
-$old  = (Test-Path $file) ? ([IO.File]::ReadAllText($file,$enc)) : ''
-Write-Utf8NoBom -Path $file -Content ($old+"`nYOUR_TEXT_HERE`n")
-"'
+## Verification
+
+For meaningful source changes run:
+
+```powershell
+npm run build
+npm test -- --run
+npm run deps:circular
+npm run lint
 ```
+
+Minimum modernization gate:
+
+- build must remain PASS
+- tests must remain PASS
+- no circular dependency may be introduced
+- lint error count must not increase from the baseline recorded in `docs/handoff.md`
+
+Documentation-only changes do not require application behavior changes, but links and referenced paths must still be checked.
+
+## Architecture / SSOT
+
+- Data contract: `src/domain/type.ts`
+- Application use cases: `src/app/`
+- Domain rules / normalization / reporting / local persistence: `src/domain/`
+- Auth: `src/features/auth/`
+- Main input UI: `src/ui/DailyRecordForm.tsx`
+- Supabase persistence: `src/app/dailyRecordSupabaseService.ts`
+- DB overview: `docs/db/README.md`
+- Automated tests: co-located `*.test.ts`
+- Manual system test: `docs/test/system-test.md`
+
+## Supabase safety
+
+- Current application persistence uses `public.daily_record_store`.
+- Do not treat unused normalized tables as the current application persistence SSOT.
+- Do not modify or drop live Supabase schema, RLS, Auth settings, or production-like data without explicit user instruction.
+- Schema changes should ultimately be represented by Git-managed migrations and verified after execution.
+
+## Handoff
+
+Update `docs/handoff.md` when a task materially changes current state, baseline, known risks, or the next action.
+Keep it as the latest checkpoint rather than creating versioned handoff files.
