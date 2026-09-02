@@ -6,6 +6,10 @@
 
 過去バージョンごとの DB 設計資料は Git 履歴を参照し、現行 Repository には版別コピーを保持しない。
 
+DB DDL のSSOTは `supabase/migrations/` に置く。現行の初期DDLは `supabase/migrations/20260902090014_current_app_baseline.sql`。
+
+このbaselineは空の新規Supabase DB専用であり、既存本番DBには未適用である。既存本番には同名objectが既に存在するため、このSQLを実行してはならない。既存本番をmigration管理へ接続する手順は別段階で決める。
+
 ## Current persistence model
 
 アプリの1日分データの契約は `src/domain/type.ts` の `DailyRecordAggregate` を基準とする。
@@ -61,11 +65,24 @@ Supabase には以下の正規化テーブルも存在する。
 - `set_item`
 
 2026-09-02 時点では、これらのテーブルは全て 0 rows で、現行アプリの Supabase 保存経路からは参照されていない。
-また、これらは public schema に存在する一方で RLS が無効である。
 
-したがって、これらを現行 DB 仕様の SSOT として扱わない。
-再利用する場合は、用途を明示して migration / RLS / application code を同時に整備する。
-不要と判断した場合は、Git 管理 migration を用意した上で Supabase から削除する。
+Git履歴の旧Excel / DBML / aggregate mappingと現行 `src/domain/type.ts` を確認した結果、これらは日次・体重・wellness・食事・food material・運動を正規化保存するために意図して設計された将来採用候補である。
+
+liveではpublic schemaに存在する一方でRLSが無効である。baselineはこの危険な状態を新規環境へ再生せず、10 tableをRLS enabled・policyなし・`anon` / `authenticated` grantなしのdeny-by-defaultで作成する。liveのRLS状態はこの作業では変更していない。
+
+したがって、これらを現行application persistenceとしては扱わないが、削除前提にも置かない。
+採用時は、aggregate contract、書込 / 読込単位、ownership chain、RLS policy、grant、移行方法を確定し、application codeと後続migrationを同時に整備する。
+
+## Baseline differences from live
+
+安全な新規環境と意図された正規形を優先し、baselineには次の意図的差分がある。live DBは未変更。
+
+- liveの `daily_record_store(user_id, record_date)` には同一定義のUNIQUE constraintが2個あるが、baselineは `daily_record_store_user_date_key` 1個だけを持つ。
+- liveの主要2 policyは `TO public` だが、baselineは認証済み利用を明示する `TO authenticated` とする。ownership条件は同じ。
+- liveは全12 tableについて `anon` / `authenticated` / `service_role` に広いtable privilegeを持つが、baselineは主要2 tableの `authenticated` に `SELECT / INSERT / UPDATE / DELETE` だけを与える。
+- liveの未使用正規化10 tableはRLS disabledだが、baselineはdeny-by-defaultとする。
+
+`app_user.id` は `auth.users.id` を参照する。liveにもsourceにもAuth user作成時の `app_user` 自動作成triggerはなく、現行sourceは `app_user` を作成しない。新規user provisioning方法は未解決であり、baselineでは推測実装していない。
 
 ## SSOT rule
 
@@ -73,13 +90,13 @@ Supabase には以下の正規化テーブルも存在する。
 
 1. アプリのデータ契約: `src/domain/type.ts`
 2. 実際の永続化処理: `src/domain/storage/dailyRecordStorage.ts`, `src/app/dailyRecordSupabaseService.ts`
-3. Supabase schema / RLS: 今後 Git 管理 migration を導入して SSOT 化する
+3. Supabase schema / RLS: `supabase/migrations/`
 
 Excel / DBML / version 別 Markdown を並列の正本として管理しない。
 
 ## Next database modernization
 
-- Supabase の現行 schema / RLS を Git 管理 migration として取得する
-- 未使用の正規化テーブルを削除するか、将来利用するかを確定する
-- 未使用テーブルを残す場合は RLS を含めて安全な状態へ修正する
-- migration 導入後は、この文書を概要説明に限定し、DDL の詳細は migration を正とする
+- baselineを新規DBとして再生し、schema / constraint / index / RLS / policy / grantを検証する
+- 既存本番DBへbaselineを再実行せず、migration履歴へ安全に接続する方法を決める
+- liveの未使用正規化10 tableをdeny-by-defaultへ移行する後続migrationと適用計画を決める
+- 正規化persistence採用時に、旧設計を現行要件へ再評価してapplication codeと後続migrationを実装する
