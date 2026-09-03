@@ -41,12 +41,12 @@ ASTRAEA では最新 `master` を正とし、通常の変更は直接作業せ�
 
 ## Baseline
 
-2026-09-02 確認済み:
+2026-09-03 確認済み:
 
 - `npm run build`: PASS
 - `TZ=Asia/Tokyo npm test -- --run`: PASS
-  - 6 test files
-  - 15 tests passed
+  - 7 test files
+  - 35 tests passed
 - `npm run deps:circular`: PASS
   - 0 circular
 - `npm run lint`: FAIL
@@ -72,6 +72,16 @@ ASTRAEA では最新 `master` を正とし、通常の変更は直接作業せ�
 - `record_json` に `DailyRecordAggregate` 全体を JSONB 保存
 - `user_id + record_date` を upsert key とする
 
+Issue #47 Phase 1-B / #54 で Supabase persistence service contract を整備済み:
+
+- save: `saved / error`
+- read: `found / not_found / error`
+- delete: `deleted / not_found / error`
+- history: `success / error`
+
+service unit tests は追加済み。DailyRecordForm のクラウド正本化切替は
+Phase 1-C / #55 の範囲であり、現行 UI の persistence routing はまだ変更していない。
+
 Git-managed baseline:
 
 - `supabase/migrations/20260902090014_current_app_baseline.sql`
@@ -94,7 +104,8 @@ baseline は空の新規 Supabase DB 専用。
 
 ## Next action
 
-ASTRAEA 上で通常の branch / Agent safety rules に従って開発を継続する。
+Issue #54 の STOP GATE でレビュー待ち。
+ユーザーの明示指示なしに Phase 1-C / #55 へ進まない。
 
 ## Non-blocking backlog
 

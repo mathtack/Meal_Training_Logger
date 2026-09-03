@@ -25,6 +25,11 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 Supabase への保存・読出・削除は `src/app/dailyRecordSupabaseService.ts` が担当する。
 現行アプリが利用する主要テーブルは `public.daily_record_store` で、1ユーザー・1日につき1件の `record_json` として `DailyRecordAggregate` を保存する。
 
+Supabase persistence service は save / read / delete の成功・not-found・errorを
+呼び出し側が区別できる result contract と、record date降順のremote history APIを持つ。
+現行 `DailyRecordForm` はまだremote history APIを利用しておらず、UI routingの切替は
+GitHub Issue #55 の範囲である。
+
 現行 remote persistence は正規化 RDB への行単位保存ではなく JSONB 保存。正規化 table 群への persistence は未実装で、追加開発は GitHub Issue #47 `Implement normalized Supabase persistence` で管理する。
 
 Supabase client は development / production を問わず初期化されるため、ローカル開発でも `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が必要。

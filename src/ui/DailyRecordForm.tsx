@@ -189,7 +189,7 @@ export const DailyRecordForm: React.FC = () => {
           record: normalized,
         });
 
-        if (!result.success) {
+        if (result.status === "error") {
           console.warn("Supabase remote save failed:", result.message);
           // 今は警告ログだけ。将来はトースト出してもよさそう
         }
@@ -261,7 +261,7 @@ export const DailyRecordForm: React.FC = () => {
             date: recordDate,
           });
 
-          if (supaResult.found) {
+          if (supaResult.status === "found") {
             loadedRecord = supaResult.record;
           }
         }

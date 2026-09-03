@@ -12,6 +12,7 @@
 主な対象:
 
 - DailyRecord service / localStorage I/O
+- Supabase persistence service contract / query / error handling
 - empty aggregate factory
 - weight / exercise / aggregate normalizer
 - DailyRecord report generation
