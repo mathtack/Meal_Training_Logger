@@ -14,13 +14,12 @@ Meal & Training Logger の ASTRAEA への移送は完了している。
 現在の運用形:
 
 ```text
-Remote instruction
-  -> ASTRAEA
-  -> Codex CLI
-  -> latest master
-  -> codex/<task-name>
-  -> edit / verify / commit / push or PR
+iPhone Remote
+  -> ASTRAEA 上の Codex Desktop
+  -> repository / Git / tests
 ```
+
+Codex CLI は doctor・設定診断・将来の Skill / 自動化などの補助用途に使用する。
 
 Repository 内の README / AGENTS / docs / code / tests / migration だけで、安全に作業開始できる状態である。
 
