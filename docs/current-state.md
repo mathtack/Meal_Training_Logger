@@ -9,28 +9,36 @@
 
 ## Current goal
 
-Meal & Training Logger を SELENA だけで開発する状態から、ASTRAEA を常時利用可能な Codex 作業ノードとして使える状態へ移行する。
+Meal & Training Logger の ASTRAEA への移送は完了している。
 
-最終形:
+現在の運用形:
 
 ```text
 Remote instruction
   -> ASTRAEA
   -> Codex CLI
-  -> latest main
+  -> latest master
   -> codex/<task-name>
   -> edit / verify / commit / push or PR
 ```
 
-Repository 内の README / AGENTS / docs / code / tests / migration だけで、安全に作業開始できる状態を目標とする。
+Repository 内の README / AGENTS / docs / code / tests / migration だけで、安全に作業開始できる状態である。
 
 ## Repository state
 
-Repository modernization と Supabase baseline migration は ASTRAEA bootstrap を開始できる水準まで完了している。
+Repository modernization、Supabase baseline migration、ASTRAEA bootstrap は完了している。
 Doc / Agent 構成は 2026-09-03 に簡素化し、Repository 入口を root `README.md` / `AGENTS.md`、詳細仕様を flat な `docs/`、将来の再利用手順を `skills/` に分離した。
 
-ASTRAEA への新規 clone は最新 `main` を正とする。
-`main` を直接作業場所にせず、clone / baseline 確認後の変更は `codex/<task-name>` branch で行う。
+ASTRAEA への移送完了時に以下を確認済み:
+
+- `master` は `origin/master` と同期済みで working tree は clean
+- `npm ci`: PASS
+- tests: 15件 PASS
+- production build: PASS
+- localhost 起動: PASS
+- Supabase Magic Link 認証および既存データの利用: PASS
+
+ASTRAEA では最新 `master` を正とし、通常の変更は直接作業せず `codex/<task-name>` branch で行う。
 
 ## Baseline
 
@@ -85,30 +93,9 @@ baseline は空の新規 Supabase DB 専用。
 
 詳細は `docs/database.md` を参照する。
 
-## Next action: ASTRAEA Bootstrap
+## Next action
 
-1. ASTRAEA で Git / Node.js / Codex CLI を確認
-2. 最新 `main` から Repository clone
-3. `npm ci`
-4. `.env.example` を基に `.env.local` を安全に設定
-5. Supabase 環境変数を設定
-6. build / tests / circular / lint baseline を確認
-7. Vite 起動
-8. Supabase Auth / save / load の実画面 smoke test
-
-その後:
-
-### Branch / Agent Safety E2E
-
-- latest main 取得
-- `codex/test-*` branch 作成
-- Agent が README / AGENTS / current-state と task-relevant docs を読んで作業
-- edit / verify / commit / push or PR
-- main を直接変更しないことを確認
-
-### Remote Instruction E2E
-
-リモート指示から ASTRAEA / Codex が小規模 task を完了できれば移行完了。
+ASTRAEA 上で通常の branch / Agent safety rules に従って開発を継続する。
 
 ## Non-blocking backlog
 
@@ -127,7 +114,7 @@ ASTRAEA移送の blocker ではない。
 
 ```powershell
 git status
-git switch main
+git switch master
 git pull --ff-only
 
 npm run build
@@ -137,4 +124,4 @@ npm run deps:circular
 npm run lint
 ```
 
-baseline と差異がなければ ASTRAEA Bootstrap から再開する。
+baseline と差異がなければ通常の開発を再開する。
