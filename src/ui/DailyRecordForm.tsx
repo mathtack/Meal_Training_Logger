@@ -1,7 +1,15 @@
 ﻿// src/ui/DailyRecordForm.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { DailyRecordAggregate, ISODate } from "../domain/type";
-import { createDailyRecordService } from "../app/dailyRecordService";
+import type {
+  DailyRecordAggregate,
+  DailyRecordSummary,
+  ISODate,
+} from "../domain/type";
+import {
+  createEmptyCloudDailyRecord,
+  normalizeCloudDailyRecord,
+  prepareDailyRecordForCloudSave,
+} from "../app/dailyRecordCloud";
 import { ExerciseSessionsEditor } from "./exercise/ExerciseSessionsEditor";
 import { WeightEditor } from "./weights/WeightEditor";
 import { WellnessEditor } from "./wellness/WellnessEditor";
@@ -12,9 +20,8 @@ import {
   saveDailyRecordToSupabase,
   fetchDailyRecordFromSupabase,
   deleteDailyRecordFromSupabase,
+  fetchDailyRecordHistoryFromSupabase,
 } from "../app/dailyRecordSupabaseService";
-
-const dailyRecordService = createDailyRecordService();
 
 type TabKey = "weight" | "wellness" | "meal" | "exercise";
 const TAB_ORDER: TabKey[] = ["weight", "wellness", "meal", "exercise"];
@@ -34,11 +41,9 @@ const REPORT_TAB_LABEL: Record<ReportTabKey, string> = {
 
 type DailyRecordMode = "edit" | "report";
 
-// 保存・読出タブの1行分
-type HistoryEntry = {
-  record_date: ISODate; // 2026-02-19
-  updated_at: string;   // ISODateTime
-};
+type HistoryEntry = DailyRecordSummary;
+type RecordLoadState = "loading" | "ready" | "error";
+type HistoryLoadState = "loading" | "ready" | "error";
 
 type DailyRecordModeToggleProps = {
   mode: DailyRecordMode;
@@ -103,26 +108,61 @@ function formatUpdatedAt(isoString: string): string {
 }
 
 export const DailyRecordForm: React.FC = () => {
-  const { user } = useAuth();
-  const [recordDate, setRecordDate] = useState<ISODate>(todayISODate());
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <CloudPersistenceNotice message="認証状態を確認しています…" />;
+  }
+
+  if (!user) {
+    return (
+      <CloudPersistenceNotice message="記録を保存・読込するにはログインしてください。" />
+    );
+  }
+
+  return <AuthenticatedDailyRecordForm key={user.id} userId={user.id} />;
+};
+
+function CloudPersistenceNotice({ message }: { message: string }) {
+  return (
+    <section style={{ maxWidth: 980, margin: "0 auto", padding: 16 }}>
+      <h2>DailyRecordForm</h2>
+      <p role="status">{message}</p>
+    </section>
+  );
+}
+
+function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
+  const initialDate = useRef<ISODate>(todayISODate()).current;
+  const [recordDate, setRecordDate] = useState<ISODate>(initialDate);
   const [tab, setTab] = useState<TabKey>("exercise"); // 最優先が運動なのでここから
-  const [record, setRecord] = useState<DailyRecordAggregate>(() => dailyRecordService.load(todayISODate()).record);
+  const [record, setRecord] = useState<DailyRecordAggregate>(() =>
+    createEmptyCloudDailyRecord({ userId, date: initialDate }),
+  );
   const [status, setStatus] = useState<string>("");
   const [baselineJson, setBaselineJson] = useState<string>("");
-  const [isDirty, setIsDirty] = useState(false);
+  const [recordLoadState, setRecordLoadState] = useState<RecordLoadState>("loading");
+  const [recordLoadError, setRecordLoadError] = useState<string>("");
+  const [loadedRecordDate, setLoadedRecordDate] = useState<ISODate | null>(null);
+  const [recordReloadVersion, setRecordReloadVersion] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState<DailyRecordMode>("edit");
   const [reportTab, setReportTab] = useState<ReportTabKey>("reportView");
-  const [history, setHistory] = useState<HistoryEntry[]>([]); // 👈 追加
-  const toJson = (x: unknown) => JSON.stringify(x);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyLoadState, setHistoryLoadState] = useState<HistoryLoadState>("loading");
+  const [historyLoadError, setHistoryLoadError] = useState<string>("");
+  const [historyReloadVersion, setHistoryReloadVersion] = useState(0);
+  const [deletingDate, setDeletingDate] = useState<ISODate | null>(null);
+
+  const toJson = (value: unknown) => JSON.stringify(value);
+  const isRecordReady = recordLoadState === "ready" && loadedRecordDate === recordDate;
+  const isDirty = isRecordReady && baselineJson !== "" && toJson(record) !== baselineJson;
+  const isMutationInProgress = isSaving || deletingDate !== null;
   const clearLabel = `${TAB_LABEL[tab]}をクリア`;
-  
-  // 履歴一覧を読み直す
-  const reloadHistory = () => {
-    const list = dailyRecordService.listHistory();
-    setHistory(list);
-  };
 
   const clearCurrentTab = () => {
+    if (!isRecordReady || isMutationInProgress) return;
+
     const ok = window.confirm(`${TAB_LABEL[tab]} をクリアする？（保存するまで反映されない）`);
     if (!ok) return;
 
@@ -171,130 +211,191 @@ export const DailyRecordForm: React.FC = () => {
   );
 
   const onSave = async (): Promise<boolean> => {
+    if (!isRecordReady || isMutationInProgress) {
+      setStatus("クラウド記録の読込完了後に保存してください。");
+      return false;
+    }
+
+    const sourceRecord = record;
+    const sourceJson = toJson(sourceRecord);
+    const prepared = prepareDailyRecordForCloudSave({
+      record: sourceRecord,
+      userId,
+      date: recordDate,
+    });
+
+    setIsSaving(true);
+    setStatus("クラウドへ保存しています…");
+
     try {
-      setStatus("saving...");
+      const result = await saveDailyRecordToSupabase({
+        userId,
+        date: recordDate,
+        record: prepared,
+      });
 
-      // ① 今まで通り localStorage / service に保存
-      const normalized = dailyRecordService.save(record); // normalized が返る
-      setRecord(normalized);
-
-      setBaselineJson(toJson(normalized));
-      setIsDirty(false);
-
-      // ② ログイン済みなら Supabase にも remote 保存
-      if (user) {
-        const result = await saveDailyRecordToSupabase({
-          userId: user.id,
-          date: recordDate, // 対象日付の state をそのまま使う
-          record: normalized,
-        });
-
-        if (result.status === "error") {
-          console.warn("Supabase remote save failed:", result.message);
-          // 今は警告ログだけ。将来はトースト出してもよさそう
-        }
+      if (result.status === "error") {
+        setStatus(`クラウド保存に失敗しました: ${result.message}`);
+        return false;
       }
 
-      // ③ 履歴一覧を更新
-      reloadHistory();
-
-      setStatus("saved");
-      setTimeout(() => setStatus(""), 800);
+      setRecord((current) => (toJson(current) === sourceJson ? prepared : current));
+      setBaselineJson(toJson(prepared));
+      setHistoryReloadVersion((version) => version + 1);
+      setStatus("クラウドへ保存しました。");
       return true;
-    } catch (e) {
-      console.error(e);
-      setStatus("save failed (see console)");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "予期しないエラー";
+      setStatus(`クラウド保存に失敗しました: ${message}`);
       return false;
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleLoadFromHistory = (date: ISODate) => {
-    const result = dailyRecordService.load(date);
-    setRecordDate(date);
-    setRecord(result.record);
-    setBaselineJson(toJson(result.record));
-    setIsDirty(false);
-    setStatus(`履歴から ${date} の記録を読み込んだよ`);
+    if (isMutationInProgress) return;
+
+    setRecordLoadState("loading");
+    setRecordLoadError("");
+    setStatus(`クラウドから ${date} の記録を読み込んでいます…`);
+    setMode("edit");
+
+    if (date === recordDate) {
+      setRecordReloadVersion((version) => version + 1);
+    } else {
+      setRecordDate(date);
+    }
   };
 
   const handleDeleteFromHistory = async (date: ISODate) => {
+    if (isMutationInProgress) return;
+
     const ok = window.confirm(`${date} の記録を削除する？（元に戻せないよ）`);
     if (!ok) return;
 
-    // ① localStorage 側を削除
-    dailyRecordService.delete(date);
-    reloadHistory();
+    setDeletingDate(date);
+    setStatus(`クラウドから ${date} の記録を削除しています…`);
 
-    // ② Supabase 側も削除（ログイン中のみ）
-    if (user) {
-      await deleteDailyRecordFromSupabase({
-        userId: user.id,
+    try {
+      const result = await deleteDailyRecordFromSupabase({
+        userId,
         date,
       });
+
+      if (result.status === "error") {
+        setStatus(`クラウド削除に失敗しました: ${result.message}`);
+        return;
+      }
+
+      setHistory((current) => current.filter((entry) => entry.record_date !== date));
+      setHistoryReloadVersion((version) => version + 1);
+
+      if (date === recordDate) {
+        const empty = createEmptyCloudDailyRecord({ userId, date });
+        setRecord(empty);
+        setBaselineJson(toJson(empty));
+        setLoadedRecordDate(date);
+        setRecordLoadState("ready");
+        setRecordLoadError("");
+      }
+
+      setStatus(
+        result.status === "deleted"
+          ? `${date} のクラウド記録を削除しました。`
+          : `${date} のクラウド記録は既に削除されています。`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "予期しないエラー";
+      setStatus(`クラウド削除に失敗しました: ${message}`);
+    } finally {
+      setDeletingDate(null);
     }
-
-    setStatus(`${date} の記録を削除したよ`);
-
-    // 今開いている日付と同じなら、画面の state をクリアするなどもアリ
-    // （必要になったら後で追加しよ）
   };
 
-  // 画面初期表示時に履歴一覧をロード
-  useEffect(() => {
-    reloadHistory();
-  }, []);
-
-  // 日付が変わったらロード（Supabase → localStorage の順で試す）
   useEffect(() => {
     let cancelled = false;
 
-    const load = async () => {
+    const loadHistory = async () => {
+      setHistoryLoadState("loading");
+      setHistoryLoadError("");
+
       try {
-        setStatus("loading...");
+        const result = await fetchDailyRecordHistoryFromSupabase({ userId });
+        if (cancelled) return;
 
-        let loadedRecord: DailyRecordAggregate | null = null;
-
-        // ① ログイン済みなら Supabase からトライ
-        if (user) {
-          const supaResult = await fetchDailyRecordFromSupabase({
-            userId: user.id,
-            date: recordDate,
-          });
-
-          if (supaResult.status === "found") {
-            loadedRecord = supaResult.record;
-          }
+        if (result.status === "success") {
+          setHistory(result.entries);
+          setHistoryLoadState("ready");
+          return;
         }
 
-        // ② Supabase に無かった / 未ログインなら localStorage
-        if (!loadedRecord) {
-          const result = dailyRecordService.load(recordDate);
-          loadedRecord = result.record;
-        }
-
-        if (cancelled || !loadedRecord) return;
-
-        setRecord(loadedRecord);
-
-        const base = toJson(loadedRecord);
-        setBaselineJson(base);
-        setIsDirty(false);
-        setMode("edit");
-        setStatus("");
-      } catch (e) {
-        console.error(e);
-        if (!cancelled) {
-          setStatus("load failed (see console)");
-        }
+        setHistoryLoadError(result.message);
+        setHistoryLoadState("error");
+      } catch (error) {
+        if (cancelled) return;
+        setHistoryLoadError(error instanceof Error ? error.message : "予期しないエラー");
+        setHistoryLoadState("error");
       }
     };
 
-    load();
+    void loadHistory();
 
     return () => {
       cancelled = true;
     };
-  }, [recordDate, user]);
+  }, [historyReloadVersion, userId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setRecordLoadState("loading");
+      setRecordLoadError("");
+      setStatus("クラウドから記録を読み込んでいます…");
+
+      try {
+        const result = await fetchDailyRecordFromSupabase({ userId, date: recordDate });
+        if (cancelled) return;
+
+        if (result.status === "error") {
+          setRecordLoadError(result.message);
+          setRecordLoadState("error");
+          setLoadedRecordDate(null);
+          setStatus("");
+          return;
+        }
+
+        const loadedRecord =
+          result.status === "found"
+            ? normalizeCloudDailyRecord({ record: result.record, userId, date: recordDate })
+            : createEmptyCloudDailyRecord({ userId, date: recordDate });
+
+        setRecord(loadedRecord);
+        setBaselineJson(toJson(loadedRecord));
+        setLoadedRecordDate(recordDate);
+        setRecordLoadState("ready");
+        setMode("edit");
+        setStatus(
+          result.status === "not_found"
+            ? `${recordDate} のクラウド記録はありません。新規記録として入力できます。`
+            : "",
+        );
+      } catch (error) {
+        if (cancelled) return;
+        setRecordLoadError(error instanceof Error ? error.message : "予期しないエラー");
+        setRecordLoadState("error");
+        setLoadedRecordDate(null);
+        setStatus("");
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [recordDate, recordReloadVersion, userId]);
 
   // タブ切替時：該当セクションの先頭入力にフォーカス
   useEffect(() => {
@@ -302,10 +403,29 @@ export const DailyRecordForm: React.FC = () => {
     if (el) setTimeout(() => el.focus(), 0);
   }, [tab]);
 
-  useEffect(() => {
-    if (!baselineJson) return;
-    setIsDirty(toJson(record) !== baselineJson);
-  }, [record, baselineJson]);
+  const retryRecordLoad = () => {
+    setRecordLoadState("loading");
+    setRecordLoadError("");
+    setRecordReloadVersion((version) => version + 1);
+  };
+
+  const retryHistoryLoad = () => {
+    setHistoryLoadState("loading");
+    setHistoryLoadError("");
+    setHistoryReloadVersion((version) => version + 1);
+  };
+
+  const recordUnavailableContent =
+    recordLoadState === "error" ? (
+      <section role="alert">
+        <p>クラウド記録の読込に失敗しました: {recordLoadError}</p>
+        <button type="button" onClick={retryRecordLoad}>
+          再読込
+        </button>
+      </section>
+    ) : (
+      <p role="status">クラウドから記録を読み込んでいます…</p>
+    );
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
@@ -346,21 +466,36 @@ export const DailyRecordForm: React.FC = () => {
               <input
                 type="date"
                 value={recordDate}
-                onChange={(e) => setRecordDate(e.target.value as ISODate)}
+                disabled={isMutationInProgress}
+                onChange={(event) => {
+                  if (event.target.value) {
+                    handleLoadFromHistory(event.target.value as ISODate);
+                  }
+                }}
                 style={{ marginLeft: 8 }}
               />
             </label>
 
-            <button type="button" onClick={onSave}>
+            <button
+              type="button"
+              disabled={!isRecordReady || isMutationInProgress}
+              onClick={onSave}
+            >
               保存
             </button>
-            <button type="button" onClick={clearCurrentTab}>
+            <button
+              type="button"
+              disabled={!isRecordReady || isMutationInProgress}
+              onClick={clearCurrentTab}
+            >
               {clearLabel}
             </button>
             {isDirty && <span style={{ fontSize: 12, opacity: 0.8 }}>未保存</span>}
-            <span style={{ opacity: 0.7 }}>{status}</span>
+            <span aria-live="polite" style={{ opacity: 0.7 }}>{status}</span>
             <span style={{ fontSize: 12, opacity: 0.65 }}>
-              {record.daily_record.updated_at ? `最終更新: ${formatUpdatedAt(record.daily_record.updated_at)}` : ""}
+              {isRecordReady && record.daily_record.updated_at
+                ? `最終更新: ${formatUpdatedAt(record.daily_record.updated_at)}`
+                : ""}
             </span>
           </div>
 
@@ -411,15 +546,17 @@ export const DailyRecordForm: React.FC = () => {
       {/* 本文 */}
       <div style={{ flex: 1, overflow: "auto" }}>
         <div style={{ maxWidth: 980, padding: 16, margin: "0 auto" }}>
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ margin: 0, fontSize: 13, color: "#555" }}>
-              Tabキーで各セクションに移動できます。各タブ内の最初の入力に自動フォーカスされます。
-            </p>
-          </div>
+          {isRecordReady && (
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ margin: 0, fontSize: 13, color: "#555" }}>
+                Tabキーで各セクションに移動できます。各タブ内の最初の入力に自動フォーカスされます。
+              </p>
+            </div>
+          )}
 
           <div>
             {mode === "edit" && (
-              <>
+              isRecordReady ? <>
                 {tab === "weight" && (
                   <WeightSection
                     record={record}
@@ -442,17 +579,25 @@ export const DailyRecordForm: React.FC = () => {
                     firstFocusRef={registerFirstFocus("exercise")}
                   />
                 )}
-              </>
+              </> : recordUnavailableContent
             )}
 
             {mode === "report" && (
               <>
-                {reportTab === "reportView" && <ReportViewSection record={record} onSave={onSave} />}
+                {reportTab === "reportView" &&
+                  (isRecordReady
+                    ? <ReportViewSection record={record} onSave={onSave} />
+                    : recordUnavailableContent)}
                 {reportTab === "io" && (
                   <ReportIOSSection
                     history={history}
+                    loadState={historyLoadState}
+                    errorMessage={historyLoadError}
+                    deletingDate={deletingDate}
+                    actionsDisabled={isMutationInProgress}
                     onLoad={handleLoadFromHistory}
                     onDelete={handleDeleteFromHistory}
+                    onRetry={retryHistoryLoad}
                   />
                 )}
               </>
@@ -541,10 +686,24 @@ function ReportViewSection(props: {
 
 function ReportIOSSection(props: {
   history: HistoryEntry[];
+  loadState: HistoryLoadState;
+  errorMessage: string;
+  deletingDate: ISODate | null;
+  actionsDisabled: boolean;
   onLoad: (date: ISODate) => void;
   onDelete: (date: ISODate) => void;
+  onRetry: () => void;
 }) {
-  const { history, onLoad, onDelete } = props;
+  const {
+    history,
+    loadState,
+    errorMessage,
+    deletingDate,
+    actionsDisabled,
+    onLoad,
+    onDelete,
+    onRetry,
+  } = props;
 
   const formatUpdatedAt = (iso: string) => {
     const d = new Date(iso);
@@ -557,6 +716,27 @@ function ReportIOSSection(props: {
     const mi = String(d.getMinutes()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
   };
+
+  if (loadState === "loading") {
+    return (
+      <section>
+        <h3>保存・読出</h3>
+        <p role="status">クラウド履歴を読み込んでいます…</p>
+      </section>
+    );
+  }
+
+  if (loadState === "error") {
+    return (
+      <section role="alert">
+        <h3>保存・読出</h3>
+        <p>クラウド履歴の読込に失敗しました: {errorMessage}</p>
+        <button type="button" onClick={onRetry}>
+          履歴を再読込
+        </button>
+      </section>
+    );
+  }
 
   if (history.length === 0) {
     return (
@@ -599,15 +779,20 @@ function ReportIOSSection(props: {
               </div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" onClick={() => onLoad(h.record_date)}>
+              <button
+                type="button"
+                disabled={actionsDisabled}
+                onClick={() => onLoad(h.record_date)}
+              >
                 この日の記録を読み込む
               </button>
               <button
                 type="button"
+                disabled={actionsDisabled}
                 onClick={() => onDelete(h.record_date)}
                 style={{ color: "#b00020", borderColor: "#b00020" }}
               >
-                削除
+                {deletingDate === h.record_date ? "削除中…" : "削除"}
               </button>
             </div>
           </div>

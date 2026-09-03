@@ -15,20 +15,24 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 
 保存先は development / production で切り替えていない。
 
-- 未ログイン: localStorage のみを利用する。
-- ログイン中の保存: localStorage に保存した後、Supabase にも remote 保存する。
-- ログイン中の読込: Supabase を優先し、対象データが無い場合や取得できない場合は localStorage を利用する。
-- Supabase 保存失敗時も、先に完了した localStorage の保存は残る。
+- 未ログイン: DailyRecord の永続化操作にはログインが必要。
+- ログイン中: 保存・読込・履歴・削除は Supabase のみを正式経路とする。
+- Supabase read の `not_found` は空の新規レコードとして扱う。
+- Supabase read の `error` は読込失敗として表示し、localStorage へ自動 fallback しない。
+- Supabase save / delete の成功確認後だけ、UI の保存済み状態・履歴を更新する。
 
-ローカル保存は `src/domain/storage/dailyRecordStorage.ts` が担当し、localStorage の `daily_record:<ISODate>` に `DailyRecordAggregate` を JSON 保存する。
+既存のローカル保存実装 `src/domain/storage/dailyRecordStorage.ts` と
+localStorage の `daily_record:<ISODate>` データは残っているが、現行 `DailyRecordForm` は
+保存・読込・履歴・削除のいずれにも利用しない。削除や legacy migration source としての
+責務整理は GitHub Issue #56 の範囲である。
 
 Supabase への保存・読出・削除は `src/app/dailyRecordSupabaseService.ts` が担当する。
 現行アプリが利用する主要テーブルは `public.daily_record_store` で、1ユーザー・1日につき1件の `record_json` として `DailyRecordAggregate` を保存する。
 
 Supabase persistence service は save / read / delete の成功・not-found・errorを
 呼び出し側が区別できる result contract と、record date降順のremote history APIを持つ。
-現行 `DailyRecordForm` はまだremote history APIを利用しておらず、UI routingの切替は
-GitHub Issue #55 の範囲である。
+service unit tests と DailyRecordForm component tests を持つ。履歴は Supabase の
+`record_date` と aggregate 内の `daily_record.updated_at` を使用する。
 
 現行 remote persistence は正規化 RDB への行単位保存ではなく JSONB 保存。正規化 table 群への persistence は未実装で、追加開発は GitHub Issue #47 `Implement normalized Supabase persistence` で管理する。
 

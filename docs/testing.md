@@ -13,6 +13,8 @@
 
 - DailyRecord service / localStorage I/O
 - Supabase persistence service contract / query / error handling
+- DailyRecordForm の認証 gate / cloud save・load・history・delete routing
+- cloud 保存前の aggregate 正規化 / ownership / timestamp
 - empty aggregate factory
 - weight / exercise / aggregate normalizer
 - DailyRecord report generation
@@ -55,7 +57,7 @@ Supabase Auth / CRUD / RLS / multi-device など、browser と実環境を必要
 - Supabase client / persistence
 - DailyRecord save / load / delete
 - RLS / schema
-- localStorage と Supabase の優先順位
+- localStorage fallback の有無と Supabase cloud SSOT routing
 
 ## Rules
 

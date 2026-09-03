@@ -25,8 +25,7 @@ main.tsx
   -> App.tsx
     -> AuthPanel
     -> DailyRecordForm
-      -> dailyRecordService
-        -> repository / localStorage
+      -> dailyRecordCloud
       -> dailyRecordSupabaseService
 ```
 
@@ -52,12 +51,22 @@ Auth は `src/features/auth/`、Supabase client 初期化は `src/lib/` が担�
 
 ## Persistence routing
 
-保存先は development / production で切り替えない。主にログイン状態で分岐する。
+保存先は development / production で切り替えない。`DailyRecordForm` の永続化は
+ログイン済みユーザーの Supabase に限定する。
 
-- 未ログイン: localStorage のみ保存・読込
-- ログイン中の保存: localStorage 保存後、Supabase に remote 保存
-- ログイン中の読込: Supabase 優先、対象データが無い場合や取得できない場合は localStorage fallback
-- Supabase 保存失敗時も、先に完了した localStorage 保存は残る
+- Auth 確認中は DailyRecord の入力・永続化 UI を表示しない。
+- 未ログイン時はログインを要求し、保存・読込・履歴・削除を提供しない。
+- ログイン中の保存・読込・履歴・削除は `dailyRecordSupabaseService` を利用する。
+- read の `not_found` はその日付の新規レコード、`error` は読込失敗として扱う。
+- read error 時に localStorage を正式データとして自動採用しない。
+- save / delete の成功結果を受け取った後だけ、画面の保存済み状態・履歴を更新する。
+
+クラウド保存前の aggregate 正規化、認証ユーザー・対象日付の適用、最終保存時刻の付与は
+`src/app/dailyRecordCloud.ts` が担当する。
+
+localStorage の repository / service / 保存済みデータは source と browser に残っているが、
+`DailyRecordForm` の runtime persistence route からは参照しない。legacy migration source としての
+責務整理は GitHub Issue #56 の範囲である。
 
 現行 remote persistence は `public.daily_record_store.record_json` へ `DailyRecordAggregate` 全体を JSONB 保存する方式。
 DB構成・安全条件は `docs/database.md` を参照する。

@@ -45,19 +45,19 @@ ASTRAEA では最新 `master` を正とし、通常の変更は直接作業せ�
 
 - `npm run build`: PASS
 - `TZ=Asia/Tokyo npm test -- --run`: PASS
-  - 7 test files
-  - 35 tests passed
+  - 9 test files
+  - 46 tests passed
 - `npm run deps:circular`: PASS
   - 0 circular
 - `npm run lint`: FAIL
-  - 30 existing errors
+  - 28 existing errors
 
 最低条件:
 
 - build を壊さない
 - tests を壊さない
 - circular dependency を発生させない
-- lint error を 30 から増やさない
+- lint error を 28 から増やさない
 
 既知事項:
 
@@ -79,8 +79,16 @@ Issue #47 Phase 1-B / #54 で Supabase persistence service contract を整備済
 - delete: `deleted / not_found / error`
 - history: `success / error`
 
-service unit tests は追加済み。DailyRecordForm のクラウド正本化切替は
-Phase 1-C / #55 の範囲であり、現行 UI の persistence routing はまだ変更していない。
+Issue #47 Phase 1-C / #55 で `DailyRecordForm` をクラウド正本へ切替済み:
+
+- 未ログイン時は DailyRecord の永続化操作にログインを要求
+- save / load / history / delete は Supabase service のみを利用
+- read `not_found` は新規レコード、`error` は失敗表示として分離
+- save / delete の成功確認後だけ保存済み状態・履歴を更新
+- read error 時に localStorage を正式データとして自動採用しない
+
+localStorage の source code と既存 browser data は削除していない。責務の整理と legacy
+migration source 化は Phase 1-D / #56 の範囲であり、未着手。
 
 Git-managed baseline:
 
@@ -104,14 +112,15 @@ baseline は空の新規 Supabase DB 専用。
 
 ## Next action
 
-Issue #54 の STOP GATE でレビュー待ち。
-ユーザーの明示指示なしに Phase 1-C / #55 へ進まない。
+Issue #55 の STOP GATE でレビュー待ち。
+実 Supabase / Magic Link / multi-device の手動確認は #57 で行う。
+ユーザーの明示指示なしに Phase 1-D / #56 へ進まない。
 
 ## Non-blocking backlog
 
 ASTRAEA移送の blocker ではない。
 
-- lint 30 existing errors の解消
+- lint 28 existing errors の解消
 - GitHub Actions CI 導入
 - `npm audit` findings の別タスク化
 - normalized Supabase persistence: Issue #47
