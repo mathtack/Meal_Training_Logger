@@ -11,9 +11,9 @@
 
 主な対象:
 
-- DailyRecord service / localStorage I/O
+- legacy `daily_record:*` reader の対象選別・診断・read-only 保証
 - Supabase persistence service contract / query / error handling
-- DailyRecordForm の認証 gate / cloud save・load・history・delete routing
+- DailyRecordForm の認証 gate / cloud save・load・history・delete routing / localStorage 非依存
 - cloud 保存前の aggregate 正規化 / ownership / timestamp
 - empty aggregate factory
 - weight / exercise / aggregate normalizer

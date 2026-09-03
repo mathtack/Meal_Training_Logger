@@ -182,6 +182,33 @@ describe("DailyRecordForm cloud persistence routing", () => {
     expect(getItem).not.toHaveBeenCalled();
   });
 
+  it("DailyRecordForm never directly reads or mutates localStorage during logged-in cloud CRUD", async () => {
+    const historyDate = "2026-09-02" as ISODate;
+    mocks.fetchHistory.mockResolvedValue({
+      status: "success",
+      entries: [{ record_date: historyDate, updated_at: UPDATED_AT }],
+    });
+    const getItem = vi.spyOn(Storage.prototype, "getItem");
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    const removeItem = vi.spyOn(Storage.prototype, "removeItem");
+    const clear = vi.spyOn(Storage.prototype, "clear");
+
+    render(<DailyRecordForm />);
+    fireEvent.click(await screen.findByRole("button", { name: "入力を変更" }));
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    await screen.findByText("クラウドへ保存しました。");
+
+    await openHistory();
+    await screen.findByText(historyDate);
+    fireEvent.click(screen.getByRole("button", { name: "削除" }));
+    await screen.findByText(`${historyDate} のクラウド記録を削除しました。`);
+
+    expect(getItem).not.toHaveBeenCalled();
+    expect(setItem).not.toHaveBeenCalled();
+    expect(removeItem).not.toHaveBeenCalled();
+    expect(clear).not.toHaveBeenCalled();
+  });
+
   it("keeps changes unsaved when the cloud save fails", async () => {
     mocks.saveRecord.mockResolvedValue({
       status: "error",

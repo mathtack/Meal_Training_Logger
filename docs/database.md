@@ -21,10 +21,13 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 - Supabase read の `error` は読込失敗として表示し、localStorage へ自動 fallback しない。
 - Supabase save / delete の成功確認後だけ、UI の保存済み状態・履歴を更新する。
 
-既存のローカル保存実装 `src/domain/storage/dailyRecordStorage.ts` と
-localStorage の `daily_record:<ISODate>` データは残っているが、現行 `DailyRecordForm` は
-保存・読込・履歴・削除のいずれにも利用しない。削除や legacy migration source としての
-責務整理は GitHub Issue #56 の範囲である。
+旧 localStorage repository / service / write storage は廃止済み。browser に残る
+`daily_record:<ISODate>` データは削除せず、将来の migration 調査用入力としてだけ扱う。
+`src/legacy/localStorage/readLegacyDailyRecords.ts` は、呼出側から明示的に渡された storage の
+対象 key だけを読み、現行 aggregate の top-level shape と key / record date の整合を確認する。
+不正候補は reason と raw value を返し、正規化、書込、削除、clear、クラウドへの自動昇格を行わない。
+現行 application runtime はこの reader を import しない。Supabase Auth が session 維持に利用する
+storage は別責務であり、この変更では Auth 設定・session data の読み書き・ログイン挙動を変更しない。
 
 Supabase への保存・読出・削除は `src/app/dailyRecordSupabaseService.ts` が担当する。
 現行アプリが利用する主要テーブルは `public.daily_record_store` で、1ユーザー・1日につき1件の `record_json` として `DailyRecordAggregate` を保存する。
@@ -94,8 +97,11 @@ live では RLS disabled のままだが、baseline は新規環境で危険な�
 優先順位:
 
 1. アプリのデータ契約: `src/domain/type.ts`
-2. 実際の永続化処理: `src/domain/storage/dailyRecordStorage.ts`, `src/app/dailyRecordSupabaseService.ts`
+2. 実際の永続化処理: `src/app/dailyRecordSupabaseService.ts`
 3. Supabase schema / RLS: `supabase/migrations/`
+
+`src/legacy/localStorage/readLegacyDailyRecords.ts` は migration input の読取境界であり、
+現行 persistence の SSOT ではない。
 
 Excel / DBML / version 別 Markdown を並列の正本として管理しない。
 

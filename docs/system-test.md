@@ -4,7 +4,7 @@
 
 - Supabase Auth (Magic Link)
 - DailyRecord save / load / delete
-- Supabase cloud SSOT と localStorage 非 fallback
+- Supabase cloud SSOT と legacy `daily_record:*` 非 fallback・非変更
 - RLS によるユーザー分離
 - PC / smartphone 間の同期
 - 通信失敗時の基本挙動
@@ -47,6 +47,18 @@ Expected:
 - クラウド記録の読込失敗が表示される。
 - legacy localStorage record は正式データとして画面に表示されない。
 - 保存操作は read の再試行が成功するまで無効である。
+
+### ROUTE-03 Legacy localStorage data remains unchanged
+
+1. テスト専用日付の `daily_record:<ISODate>` key と value を控える。
+2. ログイン状態で同日付のクラウド読込・保存・履歴表示・削除を行う。
+3. 操作後と reload 後に同じ localStorage key と value を確認する。
+
+Expected:
+
+- legacy key と value は操作前のまま残る。
+- legacy record はクラウドへ自動保存されず、画面やクラウド履歴へ混入しない。
+- application は legacy data の書込・削除・clear を行わない。
 
 ## 1. Authentication
 

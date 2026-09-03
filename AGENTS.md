@@ -84,10 +84,11 @@ Documentation-only change では application behavior の再検証は必須と�
 
 - Data contract: `src/domain/type.ts`
 - Application use cases: `src/app/`
-- Domain rules / normalization / reporting / local persistence: `src/domain/`
+- Domain rules / normalization / reporting: `src/domain/`
 - Auth: `src/features/auth/`
 - Main input UI: `src/ui/DailyRecordForm.tsx`
 - Supabase persistence: `src/app/dailyRecordSupabaseService.ts`
+- Legacy localStorage reader: `src/legacy/localStorage/readLegacyDailyRecords.ts`
 - DB DDL / RLS: `supabase/migrations/`
 - Architecture explanation: `docs/architecture.md`
 - Database explanation: `docs/database.md`
