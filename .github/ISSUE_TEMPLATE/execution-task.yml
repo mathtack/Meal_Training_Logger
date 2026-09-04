@@ -1,0 +1,90 @@
+name: Execution Task / Child Issue
+description: Parent配下で安全に完了・停止できる実行単位
+title: "[Task] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Child Issueは「安全に停止できる実行単位」です。
+        完了後は次Childへ自動で進まず、Completion / Handoff、Parent更新、Closeの後にSTOPしてください。
+
+  - type: input
+    id: parent
+    attributes:
+      label: Parent Issue
+      description: Parent / EpicのIssue番号。Standalone Issueの場合は「なし」
+      placeholder: "#123"
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: このExecution Issueで到達する状態
+    validations:
+      required: true
+
+  - type: textarea
+    id: preconditions
+    attributes:
+      label: Preconditions
+      description: 着手条件、先行Issue、必要なユーザー承認
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: 今回実施する変更
+    validations:
+      required: true
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Scope外
+      description: 勝手に実施してはいけない後続・関連変更
+
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: Deliverables
+      description: code / docs / migration / report等の成果物
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: 完了前に実行するbuild / test / lint / E2E等
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: Done
+      description: このChildをCloseできる条件
+      placeholder: |
+        - [ ] Scope完了
+        - [ ] Verification PASS
+        - [ ] Parent checkpoint更新
+    validations:
+      required: true
+
+  - type: textarea
+    id: stop_gate
+    attributes:
+      label: STOP GATE
+      description: どの時点で必ず停止するか。次工程へ自動で進まないことを明記
+      placeholder: 成果報告・Parent更新・本Issue Close後にSTOP。次Childへ進まない。
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ### Completion / Handoff
+        完了時のIssueコメントには最低限、実施内容・変更ファイル・commit/branch・検証結果・未実施事項・残課題/リスク・恒久docs更新有無・次工程へ進める状態かを記録します。
+        異常停止の場合はIssueをCloseせず、停止理由・現在地・未実施事項・再開条件を記録します。
