@@ -4,44 +4,28 @@
 
 ## Purpose
 
-この文書は作業再開用の最新 checkpoint だけを保持する。
-完了済みの詳細経緯・過去状態は Git history、未実装 Backlog は GitHub Issues を参照する。
+この文書は、Agent / Codexが安全に作業開始するために必要な「現在も有効な環境・運用上の事実」だけを保持する。
 
-## Current goal
+進捗、Current goal、Next action、Backlog、task固有handoff、過去checkpointはここに置かない。
+それらは GitHub Issues と Git history を正とする。
 
-Issue #47 Phase 1-E / #57 のクラウド正本 E2E を PC と iPhone で実施している。
+## Development environment
 
-現在の運用形:
+- Repository default branchは `master`。
+- `master` を直接編集しない。
+- 開発計画・進捗・handoffは GitHub Issues をSSOTとする。
+- Parent / Epicがある場合はParent Issue単位のbranchを統合branchとする。
+- Parentを持たない単独Issueは `codex/issue-<number>-<slug>` branchを使用する。
+- ASTRAEAはremote development hostとして利用できる。
+- Codex CLIはdoctor・設定診断・Skill / 自動化などの補助用途に利用できる。
+- 作業PCやchat sessionに依存せず、Repository + GitHub Issuesから再開できる状態を維持する。
 
-```text
-iPhone Remote
-  -> ASTRAEA 上の Codex Desktop
-  -> repository / Git / tests
-```
+作業開始時は、対象Issueとbase / working branchを明示してから変更する。
+working treeがdirty、fast-forward不可、base branchが曖昧な場合は変更開始前に停止する。
 
-Codex CLI は doctor・設定診断・将来の Skill / 自動化などの補助用途に使用する。
+## Quality baseline
 
-Repository 内の README / AGENTS / docs / code / tests / migration だけで、安全に作業開始できる状態である。
-
-## Repository state
-
-Repository modernization、Supabase baseline migration、ASTRAEA bootstrap は完了している。
-Doc / Agent 構成は 2026-09-03 に簡素化し、Repository 入口を root `README.md` / `AGENTS.md`、詳細仕様を flat な `docs/`、将来の再利用手順を `skills/` に分離した。
-
-ASTRAEA への移送完了時に以下を確認済み:
-
-- `master` は `origin/master` と同期済みで working tree は clean
-- `npm ci`: PASS
-- tests: 15件 PASS
-- production build: PASS
-- localhost 起動: PASS
-- Supabase Magic Link 認証および既存データの利用: PASS
-
-ASTRAEA では最新 `master` を正とし、通常の変更は直接作業せず `codex/<task-name>` branch で行う。
-
-## Baseline
-
-2026-09-03 確認済み:
+現在のbaseline:
 
 - `npm run build`: PASS
 - `TZ=Asia/Tokyo npm test -- --run`: PASS
@@ -54,97 +38,58 @@ ASTRAEA では最新 `master` を正とし、通常の変更は直接作業せ�
 
 最低条件:
 
-- build を壊さない
-- tests を壊さない
-- circular dependency を発生させない
-- lint error を 8 から増やさない
+- buildを壊さない
+- testsを壊さない
+- circular dependencyを発生させない
+- lint errorを8から増やさない
 
-既知事項:
+環境固有注意:
 
-- UTC のまま test を実行すると、固定 offset 時刻の表示差により report test 2件が失敗する。
-- Windows / ASTRAEA では test 前に `$env:TZ = "Asia/Tokyo"` を設定する。
+- UTCのままtestを実行すると、固定offset時刻の表示差によりreport testが失敗することがある。
+- Windows / ASTRAEAではtest前に `$env:TZ = "Asia/Tokyo"` を設定する。
 
-## Supabase status
+## Current runtime facts
 
-現行 remote persistence:
+- DailyRecordの正式remote persistenceは Supabase `public.daily_record_store`。
+- ログイン済みユーザーの save / load / history / delete は Supabase基準。
+- read error時にlegacy localStorageを正式データとして自動fallbackしない。
+- 通常runtimeは `daily_record:*` localStorageを読書きしない。
+- `src/legacy/localStorage/readLegacyDailyRecords.ts` は将来migration調査用のread-only入口であり、通常runtimeから利用しない。
+- 未使用の正規化10 table群は現行application persistenceではない。
 
-- `public.daily_record_store`
-- `record_json` に `DailyRecordAggregate` 全体を JSONB 保存
-- `user_id + record_date` を upsert key とする
+詳細な現行仕様は `docs/architecture.md` と `docs/database.md` を正とする。
 
-Issue #47 Phase 1-B / #54 で Supabase persistence service contract を整備済み:
+## Supabase safety constraints
 
-- save: `saved / error`
-- read: `found / not_found / error`
-- delete: `deleted / not_found / error`
-- history: `success / error`
+- live Supabase schema / RLS / Auth settings / production-like dataを明示指示なしに変更・削除しない。
+- schema変更はGit-managed migrationを正とする。
+- `supabase/migrations/20260902090014_current_app_baseline.sql` は空の新規DB用。
+- **既存本番DBにbaseline migrationを実行しない。**
+- 未使用正規化tableを安全確認なしにruntime persistenceへcutoverしない。
 
-Issue #47 Phase 1-C / #55 で `DailyRecordForm` をクラウド正本へ切替済み:
+## SSOT map
 
-- 未ログイン時は DailyRecord の永続化操作にログインを要求
-- save / load / history / delete は Supabase service のみを利用
-- read `not_found` は新規レコード、`error` は失敗表示として分離
-- save / delete の成功確認後だけ保存済み状態・履歴を更新
-- read error 時に localStorage を正式データとして自動採用しない
+- Repository入口 / SSOT案内: `README.md`
+- Agent / Codex恒久運用ルール: `AGENTS.md`
+- 開発計画 / Backlog / 進捗 / STOP GATE / handoff: GitHub Issues
+- Architecture: `docs/architecture.md`
+- Database / persistence: `docs/database.md`
+- Test policy: `docs/testing.md`
+- Manual system test: `docs/system-test.md`
+- Data contract: `src/domain/type.ts`
+- Application source: `src/`
+- DB DDL / RLS: `supabase/migrations/`
+- 再利用可能なAgent手順: `skills/`
+- 過去状態 / 変更履歴: Git history
 
-Issue #47 Phase 1-D / #56 で localStorage の runtime persistence 責務を廃止済み:
+## Startup checks
 
-- 旧 localStorage service / repository / write storage を source から削除
-- 通常の save / load / history / delete は `daily_record:*` localStorage を参照・変更しない
-- `src/legacy/localStorage/readLegacyDailyRecords.ts` だけを将来の migration 調査用 read-only 入口として保持
-- reader は明示的に渡された storage の `daily_record:*` だけを読み、不正候補も診断結果として保持
-- 既存 browser data の削除・正規化・クラウドへの自動昇格は行わない
-- Supabase Auth の session storage とログイン挙動は変更対象外
-
-Git-managed baseline:
-
-- `supabase/migrations/20260902090014_current_app_baseline.sql`
-- `supabase/config.toml`
-- `supabase/.gitignore`
-
-baseline は空の新規 Supabase DB 専用。
-**既存本番 DB に baseline migration を実行しない。**
-
-正規化 Supabase persistence の本実装は移送 blocker から外し、GitHub Issue #47 `Implement normalized Supabase persistence` で管理する。
-
-既知の DB 未解決事項:
-
-- 既存本番 DB を baseline 再実行なしで migration history へ接続する方法
-- `app_user` 自動 provisioning
-- live の未使用正規化10 table は RLS disabled のまま
-- Supabase official local stack の `db reset` は Docker 利用可能環境で追加確認が必要
-
-詳細は `docs/database.md` を参照する。
-
-## Next action
-
-Issue #57 の Preview E2E 結果を報告し、STOP GATE で停止する。
-
-- PC 保存 -> iPhone 読込・同一履歴、iPhone 更新 -> PC reload、両端末での削除反映を確認済み。
-- 「保存・読出」を開いた際のクラウド履歴再取得と手動再読込を追加し、修正版 Preview で履歴表示を確認済み。
-- Magic Link 検証用の Preview URL は Supabase Auth の Redirect URLs へ一時追加して検証後に削除済み。設定は元の2件へ復元済み。
-- 新規固有の Preview origin（既存 legacy `daily_record:*` がない環境）で、クラウド読込・保存・更新・履歴・削除を確認済み。通常 CRUD が localStorage を参照・変更しないことも自動テストで PASS。
-- 保存失敗時に保存済みと誤表示しない経路は自動テストで PASS。手動の失敗条件を安全に作れる場合だけ追加確認する。
-- Phase 1 のクラウド正本化は Done 判定。Issue #57 へ結果を報告したら STOP GATE で停止し、Phase 2 へ自動で進まない。
-
-## Non-blocking backlog
-
-ASTRAEA移送の blocker ではない。
-
-- lint 8 existing errors の解消
-- GitHub Actions CI 導入
-- `npm audit` findings の別タスク化
-- normalized Supabase persistence: Issue #47
-
-その他の未実装要求・将来機能は GitHub Issues を正とする。
-
-## Resume commands
-
-既存環境で再開する場合:
+既存環境で作業を再開する場合:
 
 ```powershell
 git status
-git switch master
+git fetch origin
+git switch <issue-or-parent-branch>
 git pull --ff-only
 
 npm run build
@@ -154,4 +99,4 @@ npm run deps:circular
 npm run lint
 ```
 
-baseline と差異がなければ通常の開発を再開する。
+対象branchとGitHub Issueのcheckpointが一致していることを確認してから変更を開始する。
