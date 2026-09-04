@@ -5,17 +5,19 @@ PC と smartphone の両方から利用し、Supabase Auth と Supabase persiste
 
 ## Repository entry point
 
-この README は Repository の入口だけを担う。詳細仕様や現在地は `docs/` に分離する。
+この README は Repository の入口とSSOT案内だけを担う。
+詳細な恒久仕様は `docs/`、開発計画・Backlog・進捗・handoffは GitHub Issues に分離する。
 
 作業開始時の基本的な参照順:
 
 1. `README.md`
 2. `AGENTS.md`
 3. `docs/current-state.md`
-4. タスクに応じて `docs/architecture.md` / `docs/database.md` / `docs/testing.md`
-5. 対象 code / tests / migration
+4. 指定された GitHub Issue。Parentがある場合はParent Issueも確認
+5. Issueに応じて `docs/architecture.md` / `docs/database.md` / `docs/testing.md` / source / tests / migration
 
-過去状態・変更経緯は Git history を参照する。未実装の要求・将来 Backlog は GitHub Issues を正とし、現行仕様へ先取りして複製しない。
+過去状態・変更経緯は Git history を参照する。
+未実装要求、将来計画、優先順位、Current checkpoint、Next action、task固有handoffは GitHub Issues を正とし、Repository docsへ重複保持しない。
 
 ## Source of truth
 
@@ -25,12 +27,13 @@ PC と smartphone の両方から利用し、Supabase Auth と Supabase persiste
 - 自動テスト: `src/**/*.test.ts`
 - DB DDL / RLS: `supabase/migrations/`
 - 現行アーキテクチャ: `docs/architecture.md`
-- DB / persistence 説明: `docs/database.md`
+- DB / persistence説明: `docs/database.md`
 - テスト方針: `docs/testing.md`
-- 手動 system test: `docs/system-test.md`
-- 現在地・次アクション: `docs/current-state.md`
-- Agent 運用ルール: `AGENTS.md`
-- 再利用可能な Agent 手順: `skills/`
+- 手動system test: `docs/system-test.md`
+- 現在有効な環境・運用・品質baseline・安全制約: `docs/current-state.md`
+- Agent / Codex恒久運用ルール: `AGENTS.md`
+- 開発計画 / Backlog / 進捗 / STOP GATE / handoff: GitHub Issues
+- 再利用可能なAgent手順: `skills/`
 
 ## Tech stack
 
@@ -57,7 +60,7 @@ Install:
 npm ci
 ```
 
-`.env.example` を参照して `.env.local` を作成する。`.env.local` は commit しない。
+`.env.example` を参照して `.env.local` を作成する。`.env.local` はcommitしない。
 
 Required variables:
 
@@ -74,7 +77,7 @@ npm run dev
 
 ## Verification
 
-意味のある source 変更後は以下を実行する。
+意味のあるsource変更後は以下を実行する。
 
 ```powershell
 npm run build
@@ -84,12 +87,17 @@ npm run deps:circular
 npm run lint
 ```
 
-現在の baseline と既知事項は `docs/current-state.md` を参照する。
+現在の品質baselineと環境固有注意事項は `docs/current-state.md` を参照する。
 
 ## Development workflow
 
-`main` を直接編集しない。
+default branchは `master`。`master` を直接編集しない。
 
-新規 task は clean な最新 `main` から `codex/<task-name>` branch を作成する。既存 task を再開する場合は対象 branch を明示して `git pull --ff-only` する。
+Parent / Epicがある開発では、原則としてParent Issue単位のbranchを統合branchとする。
+sequentialなChild Issueは同じParent branch上で実行し、Child完了ごとにcommit・Issue handoff・Parent checkpoint更新・Child Closeで停止する。
 
-危険な Git 操作、live Supabase schema / Auth / data の無断変更、secret や user data の commit は行わない。詳細は `AGENTS.md` を参照する。
+Child専用branchは並列、高リスク、experimental、独立レビューや個別revertが必要な場合のみ使用する。
+Parentを持たない単独Issueは `codex/issue-<number>-<slug>` branchを使用する。
+
+危険なGit操作、live Supabase schema / Auth / dataの無断変更、secretやuser dataのcommitは行わない。
+詳細なIssue遂行・branch・STOP・handoffルールは `AGENTS.md` を参照する。
