@@ -275,6 +275,24 @@ describe("DailyRecordForm cloud persistence routing", () => {
     ).toBeDefined();
   });
 
+  it("refreshes cloud history when the save/load tab is opened", async () => {
+    const date = "2099-12-31" as ISODate;
+    mocks.fetchHistory
+      .mockResolvedValueOnce({ status: "success", entries: [] })
+      .mockResolvedValue({
+        status: "success",
+        entries: [{ record_date: date, updated_at: UPDATED_AT }],
+      });
+
+    render(<DailyRecordForm />);
+    await waitFor(() => expect(mocks.fetchHistory).toHaveBeenCalledTimes(1));
+
+    await openHistory();
+
+    expect(await screen.findByText(date)).toBeDefined();
+    expect(mocks.fetchHistory).toHaveBeenCalledTimes(2);
+  });
+
   it("keeps history intact on delete failure and updates it after confirmed delete", async () => {
     const date = "2026-09-02" as ISODate;
     const entry = { record_date: date, updated_at: UPDATED_AT };
@@ -293,11 +311,12 @@ describe("DailyRecordForm cloud persistence routing", () => {
       await screen.findByText("クラウド削除に失敗しました: delete unavailable"),
     ).toBeDefined();
     expect(screen.getByText(date)).toBeDefined();
-    expect(mocks.fetchHistory).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchHistory).toHaveBeenCalledTimes(2);
 
     firstRender.unmount();
     mocks.fetchHistory.mockReset();
     mocks.fetchHistory
+      .mockResolvedValueOnce({ status: "success", entries: [entry] })
       .mockResolvedValueOnce({ status: "success", entries: [entry] })
       .mockResolvedValue({ status: "success", entries: [] });
     mocks.deleteRecord.mockResolvedValue({ status: "deleted" });
@@ -313,12 +332,16 @@ describe("DailyRecordForm cloud persistence routing", () => {
     expect(
       await screen.findByText(/まだ保存された記録はないみたい。/),
     ).toBeDefined();
-    await waitFor(() => expect(mocks.fetchHistory).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mocks.fetchHistory).toHaveBeenCalledTimes(3));
   });
 
   it("treats delete not_found as an idempotent success", async () => {
     const date = "2026-09-02" as ISODate;
     mocks.fetchHistory
+      .mockResolvedValueOnce({
+        status: "success",
+        entries: [{ record_date: date, updated_at: UPDATED_AT }],
+      })
       .mockResolvedValueOnce({
         status: "success",
         entries: [{ record_date: date, updated_at: UPDATED_AT }],

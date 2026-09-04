@@ -415,6 +415,13 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
     setHistoryReloadVersion((version) => version + 1);
   };
 
+  const handleReportTabChange = (nextTab: ReportTabKey) => {
+    setReportTab(nextTab);
+    if (nextTab === "io") {
+      retryHistoryLoad();
+    }
+  };
+
   const recordUnavailableContent =
     recordLoadState === "error" ? (
       <section role="alert">
@@ -526,7 +533,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
                     role="tab"
                     aria-selected={reportTab === t.key}
                     type="button"
-                    onClick={() => setReportTab(t.key)}
+                    onClick={() => handleReportTabChange(t.key)}
                     style={{
                       padding: "8px 12px",
                       borderRadius: 4,
@@ -746,6 +753,9 @@ function ReportIOSSection(props: {
           まだ保存された記録はないみたい。
           上の「保存」ボタンで記録を保存すると、ここに履歴が表示されるよ。
         </p>
+        <button type="button" disabled={actionsDisabled} onClick={onRetry}>
+          履歴を再読込
+        </button>
       </section>
     );
   }
@@ -753,6 +763,9 @@ function ReportIOSSection(props: {
   return (
     <section>
       <h3>保存・読出</h3>
+      <button type="button" disabled={actionsDisabled} onClick={onRetry}>
+        履歴を再読込
+      </button>
       <div
         style={{
           marginTop: 8,

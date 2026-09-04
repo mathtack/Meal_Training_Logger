@@ -1,6 +1,6 @@
 # Current State
 
-更新日: 2026-09-03
+更新日: 2026-09-04
 
 ## Purpose
 
@@ -9,7 +9,7 @@
 
 ## Current goal
 
-Meal & Training Logger の ASTRAEA への移送は完了している。
+Issue #47 Phase 1-E / #57 のクラウド正本 E2E を PC と iPhone で実施している。
 
 現在の運用形:
 
@@ -46,7 +46,7 @@ ASTRAEA では最新 `master` を正とし、通常の変更は直接作業せ�
 - `npm run build`: PASS
 - `TZ=Asia/Tokyo npm test -- --run`: PASS
   - 9 test files
-  - 47 tests passed
+  - 48 tests passed
 - `npm run deps:circular`: PASS
   - 0 circular
 - `npm run lint`: FAIL
@@ -118,9 +118,12 @@ baseline は空の新規 Supabase DB 専用。
 
 ## Next action
 
-Issue #56 の STOP GATE でレビュー待ち。
-実 Supabase / Magic Link / multi-device と legacy data 非変更の手動確認は #57 で行う。
-ユーザーの明示指示なしに #57 または Phase 2 へ進まない。
+Issue #57 の Preview E2E を継続する。
+
+- PC 保存後、iPhone の日付指定読込で同じ体重が復元されることを確認済み。
+- クラウド記録を読める一方で「保存・読出」の履歴が更新されない不具合を確認し、同タブを開いた際の再取得と手動再読込を `codex/issue-57-cloud-ssot-e2e` で修正済み。
+- 修正版 Preview で履歴表示を再確認した後、iPhone 更新 -> PC reload、削除、legacy localStorage 非変更を確認する。
+- #57 完了後も Phase 2 へは自動で進まず、STOP GATE でユーザー確認を待つ。
 
 ## Non-blocking backlog
 
