@@ -64,5 +64,6 @@ Supabase Auth / CRUD / RLS / multi-device など、browser と実環境を必要
 - test case を version 別 folder に複製しない。
 - 自動テストの SSOT は `src/**/*.test.ts`。
 - 手動 E2E / system test の SSOT は `docs/system-test.md`。
-- 現在の baseline や一時的な既知問題は `docs/current-state.md` に置く。
+- 現在有効な品質 baseline と環境固有の実行制約は `docs/current-state.md` に置く。
+- task固有の検証結果・FAIL・再開条件はGitHub Issueへ記録し、この文書へ進捗として蓄積しない。
 - 完了済み・廃止済み test plan は Git history に任せる。
