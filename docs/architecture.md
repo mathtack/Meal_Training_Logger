@@ -95,4 +95,5 @@ DB構成・安全条件は `docs/database.md` を参照する。
 - DB DDL / RLS: `supabase/migrations/`
 - Database explanation: `docs/database.md`
 - Test policy: `docs/testing.md`
-- Current work state: `docs/current-state.md`
+- Current environment / operational facts: `docs/current-state.md`
+- Development plan / progress / handoff: GitHub Issues
