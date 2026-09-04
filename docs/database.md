@@ -7,7 +7,7 @@
 
 DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migrations/20260902090014_current_app_baseline.sql`。
 
-この baseline は空の新規 Supabase DB 専用であり、既存本番 DB には未適用。既存本番には同名 object が存在するため、この SQL を実行してはならない。既存本番を migration 管理へ接続する手順は別タスクで決定する。
+この baseline は空の新規 Supabase DB 専用であり、既存本番 DB には未適用。既存本番には同名 object が存在するため、この SQL を実行してはならない。既存本番 DB は現時点で baseline migration history へ接続していない。将来変更は GitHub Issues で計画し、この baseline を既存本番へ再実行しない。
 
 ## Current persistence model
 
@@ -37,7 +37,7 @@ Supabase persistence service は save / read / delete の成功・not-found・er
 service unit tests と DailyRecordForm component tests を持つ。履歴は Supabase の
 `record_date` と aggregate 内の `daily_record.updated_at` を使用する。
 
-現行 remote persistence は正規化 RDB への行単位保存ではなく JSONB 保存。正規化 table 群への persistence は未実装で、追加開発は GitHub Issue #47 `Implement normalized Supabase persistence` で管理する。
+現行 remote persistence は正規化 RDB への行単位保存ではなく JSONB 保存。正規化 table 群への persistence は未実装であり、将来変更は GitHub Issues で管理する。この文書へ実装計画や進捗を複製しない。
 
 Supabase client は development / production を問わず初期化されるため、ローカル開発でも `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が必要。
 
@@ -105,12 +105,7 @@ live では RLS disabled のままだが、baseline は新規環境で危険な�
 
 Excel / DBML / version 別 Markdown を並列の正本として管理しない。
 
-## Open work
+## Change planning
 
-移送前提ではない DB 追加開発は GitHub Issues で管理する。
-
-- normalized Supabase persistence: Issue #47
-- 既存本番 DB を baseline 再実行なしで migration history へ接続する方法
-- `app_user` provisioning
-- live の未使用正規化10 table の安全化
-- Docker 利用可能環境での Supabase official local stack / `db reset` 追加確認
+DBの未実装要求、優先順位、migration / cutover計画、進捗は GitHub Issues を正とする。
+この文書は現行DB / persistenceの仕様と安全制約だけを保持する。
