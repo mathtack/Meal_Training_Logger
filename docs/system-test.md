@@ -231,5 +231,6 @@ Expected:
 
 ## Completion
 
-主要シナリオを PASS したら、現在の baseline や次アクションへ影響する事項だけ `docs/current-state.md` に反映する。
-過去の実施記録をこの文書へ蓄積しない。
+system testの実行結果、PASS / FAIL、残課題、再開条件は対象GitHub Issueへ記録する。
+恒久的なtest caseや現行test方針が変わった場合だけ、この文書または `docs/testing.md` を更新する。
+過去の実施記録や次アクションをこの文書へ蓄積しない。
