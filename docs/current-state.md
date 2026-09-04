@@ -118,12 +118,14 @@ baseline は空の新規 Supabase DB 専用。
 
 ## Next action
 
-Issue #57 の Preview E2E を継続する。
+Issue #57 の Preview E2E 結果を報告し、STOP GATE で停止する。
 
-- PC 保存後、iPhone の日付指定読込で同じ体重が復元されることを確認済み。
-- クラウド記録を読める一方で「保存・読出」の履歴が更新されない不具合を確認し、同タブを開いた際の再取得と手動再読込を `codex/issue-57-cloud-ssot-e2e` で修正済み。
-- 修正版 Preview で履歴表示を再確認した後、iPhone 更新 -> PC reload、削除、legacy localStorage 非変更を確認する。
-- #57 完了後も Phase 2 へは自動で進まず、STOP GATE でユーザー確認を待つ。
+- PC 保存 -> iPhone 読込・同一履歴、iPhone 更新 -> PC reload、両端末での削除反映を確認済み。
+- 「保存・読出」を開いた際のクラウド履歴再取得と手動再読込を追加し、修正版 Preview で履歴表示を確認済み。
+- Magic Link 検証用の Preview URL は Supabase Auth の Redirect URLs へ一時追加して検証後に削除済み。設定は元の2件へ復元済み。
+- 新規固有の Preview origin（既存 legacy `daily_record:*` がない環境）で、クラウド読込・保存・更新・履歴・削除を確認済み。通常 CRUD が localStorage を参照・変更しないことも自動テストで PASS。
+- 保存失敗時に保存済みと誤表示しない経路は自動テストで PASS。手動の失敗条件を安全に作れる場合だけ追加確認する。
+- Phase 1 のクラウド正本化は Done 判定。Issue #57 へ結果を報告したら STOP GATE で停止し、Phase 2 へ自動で進まない。
 
 ## Non-blocking backlog
 
