@@ -1,0 +1,91 @@
+name: Epic / Parent Issue
+description: 複数の安全な実行単位を束ねる大規模開発・移行・継続テーマ
+title: "[Epic] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Parent Issueは全体計画と再開点のSSOTです。
+        詳細な実装ログはChild Issueへ残し、ここには最新の集約状態を維持してください。
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: このEpicで最終的に実現する状態
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: このEpicに含める責務・成果物
+    validations:
+      required: true
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: 明示的に扱わない範囲
+
+  - type: textarea
+    id: execution_plan
+    attributes:
+      label: Execution Plan / Child Issues
+      description: Child Issueと実行順。未起票なら予定単位を記載
+      placeholder: |
+        - [ ] #123 Step A
+        - [ ] #124 Step B
+        - [ ] #125 E2E
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies / Order
+      description: 依存関係、前提、並列可否
+
+  - type: textarea
+    id: current_checkpoint
+    attributes:
+      label: Current checkpoint
+      description: 現在どこまで確定・完了しているか。詳細ログではなく最新状態だけを記載
+      placeholder: 未着手
+    validations:
+      required: true
+
+  - type: textarea
+    id: next_action
+    attributes:
+      label: Next action
+      description: 再開時に最初に実行するChild Issueまたは判断
+    validations:
+      required: true
+
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Blockers / Decisions
+      description: 未解決blocker、必要なユーザー判断。なければ「なし」
+
+  - type: textarea
+    id: done
+    attributes:
+      label: Done
+      description: Epic全体のDone条件
+      placeholder: |
+        - [ ] Child IssuesがすべてDone
+        - [ ] 全体E2EがPASS
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: resume_quality
+    attributes:
+      label: Resume quality
+      options:
+        - label: Repository + Parent Issue + 次Child Issueだけで、過去chatや作業PCに依存せず再開できる状態を維持する
+          required: true
