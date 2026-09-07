@@ -193,6 +193,24 @@ Expected:
 
 - User A の行を変更・削除できない。
 
+### RLS-03 Dormant normalized schema hardening regression
+
+未使用の正規化10 tableをdeny-by-default化した後も、現行JSONB persistenceが影響を受けないことを確認する。
+
+1. 既存の受入テストユーザーでログインし、browser DevToolsのNetwork tabでログを保持する。
+2. 既存データと重ならないテスト専用日付を選び、体重・体調・食事・運動に識別可能な値を入力して保存する。
+3. reloadして同日付を開き、入力値とクラウド履歴を確認する。
+4. 一部を変更して再保存し、もう一度reloadして更新値を確認する。
+5. Network tabを `/rest/v1/` で絞り込み、DailyRecordのrequest先を確認する。
+6. テスト日付を削除し、reload後に画面と履歴から消えることを確認する。
+
+Expected:
+
+- create / reload / update / history / deleteが従来どおり成功する。
+- DailyRecordの永続化requestは `daily_record_store` を利用し、未使用の正規化10 tableへrequestしない。
+- 現行CRUDでpermission denied、401、403が発生しない。
+- テスト対象外の日付と他ユーザーの記録は変化しない。
+
 ## 5. Failure handling
 
 ### ERR-01 Supabase unavailable

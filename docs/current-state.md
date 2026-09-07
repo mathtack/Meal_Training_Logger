@@ -1,6 +1,6 @@
 # Current State
 
-更新日: 2026-09-04
+更新日: 2026-09-08
 
 ## Purpose
 
@@ -51,6 +51,7 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 ## Current runtime facts
 
 - DailyRecordの正式remote persistenceは Supabase `public.daily_record_store`。
+- 未使用の正規化10 table群は live でも RLS enabled・policyなし・`PUBLIC` / `anon` / `authenticated` のtable privilegeなしで、runtimeからは利用しない。
 - ログイン済みユーザーの save / load / history / delete は Supabase基準。
 - read error時にlegacy localStorageを正式データとして自動fallbackしない。
 - 通常runtimeは `daily_record:*` localStorageを読書きしない。
@@ -65,6 +66,7 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 - schema変更はGit-managed migrationを正とする。
 - `supabase/migrations/20260902090014_current_app_baseline.sql` は空の新規DB用。
 - **既存本番DBにbaseline migrationを実行しない。**
+- 既存live DBのmigration historyには `20260902090014` をschema適用済みとして履歴だけ接続し、`20260907121742` のdeny-by-default migrationを適用済み。baseline SQL自体はliveで実行していない。
 - 未使用正規化tableを安全確認なしにruntime persistenceへcutoverしない。
 
 ## SSOT map

@@ -7,7 +7,7 @@
 
 DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migrations/20260902090014_current_app_baseline.sql`。
 
-この baseline は空の新規 Supabase DB 専用であり、既存本番 DB には未適用。既存本番には同名 object が存在するため、この SQL を実行してはならない。既存本番 DB は現時点で baseline migration history へ接続していない。将来変更は GitHub Issues で計画し、この baseline を既存本番へ再実行しない。
+この baseline は空の新規 Supabase DB 専用であり、既存本番 DB には未適用。既存本番には同名 object が存在するため、この SQL を実行してはならない。既存本番 DB はobjectとdataの事前確認後、2026-09-08にbaseline versionをschema適用済みとしてmigration historyへ履歴だけ接続した。baseline SQL自体は実行していない。以後もこの baseline を既存本番へ再実行しない。
 
 ## Current persistence model
 
@@ -74,21 +74,22 @@ Supabase には以下の正規化 table も存在する。
 - `exercise_item`
 - `set_item`
 
-2026-09-02 確認時点では全て 0 rows で、現行アプリの Supabase 保存経路から参照されていない。
+2026-09-08 確認時点では全て 0 rows で、現行アプリの Supabase 保存経路から参照されていない。
 Git 履歴の旧 Excel / DBML / aggregate mapping と現行 `src/domain/type.ts` の確認結果から、将来採用候補として baseline に保持している。
 
-live では RLS disabled のままだが、baseline は新規環境で危険な状態を再生しないよう、10 table を RLS enabled・policyなし・browser role grantなしの deny-by-default で作成する。live 側はこの modernization では変更していない。
+baseline は新規環境で危険な状態を再生しないよう、10 table を RLS enabled・policyなし・browser role grantなしの deny-by-default で作成する。liveにも `20260907121742_harden_dormant_normalized_tables.sql` を適用済みで、同じdeny-by-default状態とする。allow policyとbrowser role grantは、ownership modelとruntime persistenceを実装・レビューするまで追加しない。
 
 採用時は aggregate contract、write / read / delete unit、ownership chain、RLS、grant、migration / cutover を確定し、application code と後続 migration を同時に整備する。詳細 Backlog は Issue #47 を正とする。
 
 ## Baseline differences from live
 
-安全な新規環境と意図された正規形を優先し、baseline には以下の意図的差分がある。live DB は未変更。
+安全な新規環境と意図された正規形を優先し、baseline には以下の意図的差分がある。
 
 - live の `daily_record_store(user_id, record_date)` には同一定義の UNIQUE constraint が2個あるが、baseline は `daily_record_store_user_date_key` 1個だけを持つ。
 - live の主要2 policy は `TO public` だが、baseline は `TO authenticated` とする。ownership 条件は同じ。
-- live は全12 tableについて browser role に広い table privilege を持つが、baseline は主要2 tableの `authenticated` に `SELECT / INSERT / UPDATE / DELETE` だけを与える。
-- live の未使用正規化10 tableは RLS disabled だが、baseline は deny-by-default とする。
+- live の主要2 tableは `anon` / `authenticated` に広い table privilegeを持つが、baseline は `authenticated` に `SELECT / INSERT / UPDATE / DELETE` だけを与える。
+
+未使用正規化10 tableのRLS・grant状態は、後続hardening migrationにより現在はbaselineと同じdeny-by-defaultであり、上記の差分には含まれない。
 
 `app_user.id` は `auth.users.id` を参照する。live にも source にも Auth user 作成時の `app_user` 自動作成 trigger はなく、現行 source は `app_user` を作成しない。新規 user provisioning 方法は未解決で、baseline では推測実装していない。
 
