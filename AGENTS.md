@@ -30,12 +30,19 @@ Chat history より Repository の現行 SSOT を優先する。
 
 ## Git safety
 
-- `main` を直接編集しない。
+- `master` を直接編集しない。
 - 原則 `codex/<task-name>` branch で作業する。
-- 新規 task を main から開始する場合、clean working tree と `git pull --ff-only` 成功を必須とする。
-- main が dirty、fast-forward 不可、対象 branch が曖昧な場合は変更を開始しない。
+- 新規 task を `master` から開始する場合、clean working tree と `git pull --ff-only` 成功を必須とする。
+- `master` が dirty、fast-forward 不可、対象 branch が曖昧な場合は変更を開始しない。
 - `reset --hard`, force push, history rewrite など破壊的操作は明示指示なしに行わない。
 - push / PR は task または user instruction が求める場合だけ行う。
+- branch deletion は原則禁止とする。ただし、Issue完了後の不要branch整理は、以下をすべて満たす場合に限り行ってよい。
+  - 対象Issueが完了済みである。
+  - 子Issue branchは親Issue branchへ、親Issue branchは `master` へ成果が完全に取り込まれている。
+  - `git fetch --prune origin` 後、統合先と対象branchを比較し、対象branch固有の未取り込みcommitがないことをGitで確認している。
+  - working treeがcleanで、対象branchが現在checkout中ではない。
+  - 通常削除（例: `git branch -d`、確認済みremote branchに対する `git push origin --delete`）のみを使用し、`git branch -D` 等の強制削除は使用しない。
+- 上記条件を満たす完了branchのremote削除は、通常のpush制限の例外として追加のuser instructionなしに行ってよい。取り込み状況が曖昧、確認不能、または未取り込みcommitがある場合は削除せず停止して報告する。
 
 ## Change discipline
 
