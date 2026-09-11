@@ -11,6 +11,7 @@ import type {
   UUID,
 } from "../../domain/type";
 import { LOAD_UNIT_LABEL } from "../../domain/labels/wellnessLabels";
+import { generateUUID } from "../../domain/generateUUID";
 
 type Props = {
   record: DailyRecordAggregate;
@@ -18,9 +19,6 @@ type Props = {
 };
 
 const nowISO = () => new Date().toISOString();
-const uuid = (): UUID =>
-  (globalThis.crypto?.randomUUID?.() ??
-    `uuid_${Math.random().toString(16).slice(2)}_${Date.now()}`) as UUID;
 
 function swap<T>(arr: T[], i: number, j: number): T[] {
   const copy = [...arr];
@@ -32,7 +30,7 @@ function createSessionAgg(
   dailyRecordId: UUID,
   sessionOrder: number,
 ): ExerciseSessionAggregate {
-  const id = uuid();
+  const id = generateUUID();
   const now = nowISO();
   return {
     session: {
@@ -56,7 +54,7 @@ function createItemBase(
   itemOrder: number,
   style: RecordingStyle,
 ): ExerciseItem {
-  const id = uuid();
+  const id = generateUUID();
   const now = nowISO();
   const base = {
     id,
@@ -75,7 +73,7 @@ function createItemBase(
   }
 
   // SETS
-  const setId = uuid();
+  const setId = generateUUID();
   const set: SetItem = {
     id: setId,
     exercise_item_id: id,
@@ -120,7 +118,7 @@ function parseNumberOrNull(value: string): number | null {
 function createSet(itemId: UUID, setOrder: number): SetItem {
   const now = nowISO();
   return {
-    id: uuid(),
+    id: generateUUID(),
     exercise_item_id: itemId,
     set_order: setOrder,
     load_value: null,

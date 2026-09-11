@@ -75,9 +75,9 @@ export interface FoodItem {
   meal_record_id: UUID;
   food_item_order: number; // ★0始まり・必須推奨
   food_name: string;
-  food_amount: number;            // decimal → number
+  food_amount: number | null;     // draft rowはnullを許容
   food_amount_unit: string;
-  food_calorie: number;           // decimal → number
+  food_calorie: number | null;    // draft rowはnullを許容
   food_protein?: number | null;   // decimal → number
   food_fat?: number | null;
   food_carbohydrates?: number | null;
