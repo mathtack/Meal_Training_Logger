@@ -37,7 +37,7 @@ Supabase persistence service は save / read / delete の成功・not-found・er
 service unit tests と DailyRecordForm component tests を持つ。履歴は Supabase の
 `record_date` と aggregate 内の `daily_record.updated_at` を使用する。
 
-現行 remote persistence は正規化 RDB への行単位保存ではなく JSONB 保存。正規化 table 群への persistence は未実装であり、将来変更は GitHub Issues で管理する。この文書へ実装計画や進捗を複製しない。
+現行 remote persistence は JSONB 保存。正規化 RDB 用のサービスは下記のとおり実装されているが、画面の保存・読込・履歴・削除経路からは利用しない。切替計画と進捗は GitHub Issues で管理する。
 
 Supabase client は development / production を問わず初期化されるため、ローカル開発でも `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が必要。
 
@@ -59,7 +59,7 @@ RLS は有効で、ログインユーザーが自身の `user_id` の行だけ�
 Supabase Auth のユーザーに対応するアプリユーザーテーブル。
 RLS は有効で、ユーザー本人の行のみ操作可能とする。
 
-## Normalized schema reserved for future use
+## Normalized schema and dormant services
 
 Supabase には以下の正規化 table も存在する。
 
@@ -80,6 +80,22 @@ Git 履歴の旧 Excel / DBML / aggregate mapping と現行 `src/domain/type.ts`
 baseline は新規環境で危険な状態を再生しないよう、10 table を RLS enabled・policyなし・browser role grantなしの deny-by-default で作成する。liveにも `20260907121742_harden_dormant_normalized_tables.sql` を適用済みで、同じdeny-by-default状態とする。allow policyとbrowser role grantは、ownership modelとruntime persistenceを実装・レビューするまで追加しない。
 
 採用時は aggregate contract、write / read / delete unit、ownership chain、RLS、grant、migration / cutover を確定し、application code と後続 migration を同時に整備する。詳細 Backlog は Issue #47 を正とする。
+
+### Repository contract
+
+`20260911085026_normalized_schema_contract.sql` は全childの `user_id`、tenant-qualified composite FK、order / enum constraint、index、food draftのnullable列を定義する。全正規化tableが空であることを適用前に検証する。
+
+`20260911091026_normalized_atomic_write_rpc.sql` はauthenticated ownership RLSと明示grant、`save_daily_record_normalized(jsonb)` を定義する。RPCは `SECURITY INVOKER`、空の `search_path`、authenticated限定EXECUTEとし、最初の保存で `app_user` を冪等作成する。同じuser/dateのrootをlockし、root ID / created_atを維持して全childをtransaction内で置換する。root updated_atはDB transaction時刻とする。両migrationはlive適用済みの記述ではない。
+
+- `src/app/dailyRecordNormalizedWriteMapper.ts` / `dailyRecordNormalizedWriteService.ts`: aggregateの検証・order正規化と保存RPC呼出。
+- `src/app/dailyRecordNormalizedQueryService.ts`: root起点の1回のrelational read、root列だけのhistory、root削除とFK cascade。親子関係はmigrationのcomposite FK名を指定する。
+- `src/app/dailyRecordNormalizedReadMapper.ts`: DB responseからaggregateへ復元。全childのowner / parent ID、型、必須field、TEXT / SETSを検証し、不正な応答をpartial recordとして返さない。wellnessはnull / 0行をnull、1行をobjectとして復元し、複数行を拒否する。
+
+読込は各階層の保存済みorderでsortし、order値、ID、timestamp、foodのnullを保持する。DB専用child user_idとrelation fieldをdomain objectへ持ち込まない。historyは `record_date` 降順のkeyset paginationを使い、空pageまで取得する。途中の失敗時にpartial historyを成功扱いにしない。
+
+readは `found / not_found / error`、deleteは `deleted / not_found / error`、historyは `success / error` を返す。deleteはuser/dateで絞った1 rootの返却identityを確認する。cutover期間のrollback mirrorはこの削除サービスには含まれない。FoodMaterialは現行aggregateに存在しないためread/write mapperの対象外であり、root削除時はFK cascadeに含まれる。
+
+これらのサービスはcurrent UIからimportしない。実PostgRESTでのrelationship解決とAPIの行数上限は、live適用・切替時に実環境で検証する。
 
 ## Baseline differences from live
 

@@ -15,6 +15,8 @@
 - Supabase persistence service contract / query / error handling
 - DailyRecordForm の認証 gate / cloud save・load・history・delete routing / localStorage 非依存
 - cloud 保存前の aggregate 正規化 / ownership / timestamp
+- dormant normalized query serviceのHTTP request / result contract / history pagination
+- normalized read mapperの全階層order / nullable draft / ownership / parent / union検証
 - empty aggregate factory
 - weight / exercise / aggregate normalizer
 - DailyRecord report generation
@@ -27,6 +29,20 @@ npm test -- --run
 ```
 
 固定 offset 時刻の表示差を避けるため、現在は test 前に `TZ=Asia/Tokyo` を設定する。
+
+### Normalized database verification
+
+`scripts/verify-normalized-query-db.mjs` は外部接続を行わず、PGliteのin-memory PostgreSQLへGit-managed migrationsと架空の2ユーザーデータを構築する。root削除から全10 tableへのcascade、別user / 別dateの保持、RLS、anon拒否、history、再削除、既存JSONBの非変更を検証する。
+
+Node.js 22.18以上を使用する。検証依存を一時フォルダへ入れればapplicationのpackage / lockfileを変更せず実行できる。
+
+```powershell
+$dbTestDependencies = Join-Path ([IO.Path]::GetTempPath()) ('meal-logger-db-test-' + [guid]::NewGuid().ToString('N'))
+npm install --prefix $dbTestDependencies --no-save --package-lock=false @electric-sql/pglite@0.5.8
+node scripts/verify-normalized-query-db.mjs (Join-Path $dbTestDependencies 'node_modules/@electric-sql/pglite/dist/index.js')
+```
+
+この検証はDBのRLS / FK semanticsを確認する。PostgREST serverを起動しないため、実環境のrelationship解決・API行数上限・認証付き通信はlive適用時のsystem testで別途確認する。HTTP contract testsは実際のsupabase-js clientと架空のfetch responseを使用する。
 
 ## Quality gate
 
