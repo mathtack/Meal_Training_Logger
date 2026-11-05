@@ -99,6 +99,8 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 `20261105214519_private_backfill_ledger.sql` はnormalized writerを共通化し、private ledgerと管理者向けinvoker routineを追加する。Repositoryでの検証手順とlive適用前の条件は [backfill runbook](backfill.md) を参照する。
 
+`20261105220611_narrow_jsonb_runtime_access.sql` は、既存JSONB経路のownership policyをauthenticatedに限定し、`app_user` のSELECT / INSERT / UPDATEと `daily_record_store` のCRUDだけをbrowser roleへgrantする。Repositoryで検証済みのforward migrationであり、liveの権限は適用時のpostflightで確認する。
+
 ## Baseline differences from live
 
 安全な新規環境と意図された正規形を優先し、baseline には以下の意図的差分がある。

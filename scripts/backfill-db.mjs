@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 
 // Build only in a caller-created, isolated PGlite database.
-export async function initializeBackfillTestDatabase(db) {
+export async function initializeBackfillTestDatabase(db, through) {
   await db.exec(`
     create schema auth;
     create table auth.users (id uuid primary key);
@@ -16,6 +16,7 @@ export async function initializeBackfillTestDatabase(db) {
   const migrations = new URL("../supabase/migrations/", import.meta.url);
   for (const file of (await readdir(migrations)).filter(file => file.endsWith(".sql")).sort()) {
     await db.exec(await readFile(new URL(file, migrations), "utf8"));
+    if (file === through) break;
   }
 }
 

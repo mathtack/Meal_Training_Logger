@@ -14,6 +14,7 @@
 - legacy `daily_record:*` reader の対象選別・診断・read-only 保証
 - offline legacy inventoryの原本digest / owner確認 / canonical比較 / conflict・quarantine境界（手順: `docs/legacy-inventory.md`）
 - backfillのowner適用・重複・採用判断・timezone・checksum。PGliteのledger / rollback / retry / idempotency検証は `node scripts/verify-backfill-db.mjs <pglite-module>`。
+- JSONB権限収束のfresh / live-like rehearsalは `node scripts/verify-jsonb-preflight.mjs <pglite-module> [private-scoped-snapshot]`。snapshot指定時は既存JSONB・profileのcountとchecksumも照合する。Auth IDは隔離DBのFK検証に使う。
 - Supabase persistence service contract / query / error handling
 - DailyRecordForm の認証 gate / cloud save・load・history・delete routing / localStorage 非依存
 - cloud 保存前の aggregate 正規化 / ownership / timestamp
