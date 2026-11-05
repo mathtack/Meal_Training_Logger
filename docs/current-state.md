@@ -1,6 +1,6 @@
 # Current State
 
-更新日: 2026-11-05
+更新日: 2026-11-06
 
 ## Purpose
 
@@ -51,7 +51,7 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 ## Current runtime facts
 
 - DailyRecordの正式remote persistenceは Supabase `public.daily_record_store`。
-- 未使用の正規化10 table群は live でも RLS enabled・policyなし・`PUBLIC` / `anon` / `authenticated` のtable privilegeなしで、runtimeからは利用しない。
+- liveの正規化10 table群には所有者RLSとauthenticated向けCRUDを適用済み。現行runtimeはJSONBを使用する。詳細は `docs/database.md`。
 - ログイン済みユーザーの save / load / history / delete は Supabase基準。
 - read error時にlegacy localStorageを正式データとして自動fallbackしない。
 - 通常runtimeは `daily_record:*` localStorageを読書きしない。

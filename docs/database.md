@@ -74,18 +74,17 @@ Supabase には以下の正規化 table も存在する。
 - `exercise_item`
 - `set_item`
 
-2026-09-08 確認時点では全て 0 rows で、現行アプリの Supabase 保存経路から参照されていない。
-Git 履歴の旧 Excel / DBML / aggregate mapping と現行 `src/domain/type.ts` の確認結果から、将来採用候補として baseline に保持している。
+現行アプリの Supabase 保存経路はJSONBを使用する。正規化tableはschema適用後の確認時点で全て空。
 
-baseline は新規環境で危険な状態を再生しないよう、10 table を RLS enabled・policyなし・browser role grantなしの deny-by-default で作成する。liveにも `20260907121742_harden_dormant_normalized_tables.sql` を適用済みで、同じdeny-by-default状態とする。allow policyとbrowser role grantは、ownership modelとruntime persistenceを実装・レビューするまで追加しない。
+baseline と `20260907121742_harden_dormant_normalized_tables.sql` は、後続migration適用前の10 tableをdeny-by-defaultとする。現在のliveは後述のownership RLSとauthenticated向けCRUDを適用済みで、anonにtable privilegeはない。
 
 採用時は aggregate contract、write / read / delete unit、ownership chain、RLS、grant、migration / cutover を確定し、application code と後続 migration を同時に整備する。詳細 Backlog は Issue #47 を正とする。
 
-### Repository contract
+### Normalized schema and RPC contract
 
 `20260911085026_normalized_schema_contract.sql` は全childの `user_id`、tenant-qualified composite FK、order / enum constraint、index、food draftのnullable列を定義する。全正規化tableが空であることを適用前に検証する。
 
-`20260911091026_normalized_atomic_write_rpc.sql` はauthenticated ownership RLSと明示grant、`save_daily_record_normalized(jsonb)` を定義する。RPCは `SECURITY INVOKER`、空の `search_path`、authenticated限定EXECUTEとし、最初の保存で `app_user` を冪等作成する。同じuser/dateのrootをlockし、root ID / created_atを維持して全childをtransaction内で置換する。root updated_atはDB transaction時刻とする。両migrationはlive適用済みの記述ではない。
+`20260911091026_normalized_atomic_write_rpc.sql` はauthenticated ownership RLSと明示grant、`save_daily_record_normalized(jsonb)` を定義する。RPCは `SECURITY INVOKER`、空の `search_path`、authenticated限定EXECUTEとし、最初の保存で `app_user` を冪等作成する。同じuser/dateのrootをlockし、root ID / created_atを維持して全childをtransaction内で置換する。root updated_atはDB transaction時刻とする。schema contractとRPCの両migrationはlive適用済み。
 
 - `src/app/dailyRecordNormalizedWriteMapper.ts` / `dailyRecordNormalizedWriteService.ts`: aggregateの検証・order正規化と保存RPC呼出。
 - `src/app/dailyRecordNormalizedQueryService.ts`: root起点の1回のrelational read、root列だけのhistory、root削除とFK cascade。親子関係はmigrationのcomposite FK名を指定する。
@@ -97,19 +96,15 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 これらのサービスはcurrent UIからimportしない。実PostgRESTでのrelationship解決とAPIの行数上限は、live適用・切替時に実環境で検証する。
 
-`20261105214519_private_backfill_ledger.sql` はnormalized writerを共通化し、private ledgerと管理者向けinvoker routineを追加する。Repositoryでの検証手順とlive適用前の条件は [backfill runbook](backfill.md) を参照する。
+`20261105214519_private_backfill_ledger.sql` はnormalized writerを共通化し、private ledgerと管理者向けinvoker routineを追加する。live適用済み。台帳と管理者向けroutineはbrowser roleからアクセスできず、private schemaはData APIに公開されていない。検証手順は [backfill runbook](backfill.md) を参照する。
 
-`20261105220611_narrow_jsonb_runtime_access.sql` は、既存JSONB経路のownership policyをauthenticatedに限定し、`app_user` のSELECT / INSERT / UPDATEと `daily_record_store` のCRUDだけをbrowser roleへgrantする。Repositoryで検証済みのforward migrationであり、liveの権限は適用時のpostflightで確認する。
+`20261105220611_narrow_jsonb_runtime_access.sql` はlive適用済み。既存JSONB経路のownership policyをauthenticatedに限定し、`app_user` のSELECT / INSERT / UPDATEと `daily_record_store` のCRUDをauthenticatedへgrantする。
 
 ## Baseline differences from live
 
 安全な新規環境と意図された正規形を優先し、baseline には以下の意図的差分がある。
 
 - live の `daily_record_store(user_id, record_date)` には同一定義の UNIQUE constraint が2個あるが、baseline は `daily_record_store_user_date_key` 1個だけを持つ。
-- live の主要2 policy は `TO public` だが、baseline は `TO authenticated` とする。ownership 条件は同じ。
-- live の主要2 tableは `anon` / `authenticated` に広い table privilegeを持つが、baseline は `authenticated` に `SELECT / INSERT / UPDATE / DELETE` だけを与える。
-
-未使用正規化10 tableのRLS・grant状態は、後続hardening migrationにより現在はbaselineと同じdeny-by-defaultであり、上記の差分には含まれない。
 
 `app_user.id` は `auth.users.id` を参照する。live にも source にも Auth user 作成時の `app_user` 自動作成 trigger はなく、現行 source は `app_user` を作成しない。新規 user provisioning 方法は未解決で、baseline では推測実装していない。
 

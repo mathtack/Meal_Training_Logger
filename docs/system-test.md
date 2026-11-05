@@ -193,9 +193,9 @@ Expected:
 
 - User A の行を変更・削除できない。
 
-### RLS-03 Dormant normalized schema hardening regression
+### RLS-03 JSONB runtime regression after RLS changes
 
-未使用の正規化10 tableをdeny-by-default化した後も、現行JSONB persistenceが影響を受けないことを確認する。
+正規化schemaやRLSの変更後も、現行JSONB persistenceのCRUDと所有者分離を確認する。
 
 1. 既存の受入テストユーザーでログインし、browser DevToolsのNetwork tabでログを保持する。
 2. 既存データと重ならないテスト専用日付を選び、体重・体調・食事・運動に識別可能な値を入力して保存する。
