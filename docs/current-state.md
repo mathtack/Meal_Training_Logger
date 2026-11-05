@@ -29,8 +29,8 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 
 - `npm run build`: PASS
 - `TZ=Asia/Tokyo npm test -- --run`: PASS
-  - 15 test files
-  - 118 tests passed
+  - 16 test files
+  - 123 tests passed
 - `npm run deps:circular`: PASS
   - 0 circular
 - `npm run lint`: FAIL

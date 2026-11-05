@@ -97,6 +97,8 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 これらのサービスはcurrent UIからimportしない。実PostgRESTでのrelationship解決とAPIの行数上限は、live適用・切替時に実環境で検証する。
 
+`20261105214519_private_backfill_ledger.sql` はnormalized writerを共通化し、private ledgerと管理者向けinvoker routineを追加する。Repositoryでの検証手順とlive適用前の条件は [backfill runbook](backfill.md) を参照する。
+
 ## Baseline differences from live
 
 安全な新規環境と意図された正規形を優先し、baseline には以下の意図的差分がある。
