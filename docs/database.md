@@ -74,7 +74,7 @@ Supabase には以下の正規化 table も存在する。
 - `exercise_item`
 - `set_item`
 
-現行アプリの Supabase 保存経路はJSONBを使用する。正規化tableはschema適用後の確認時点で全て空。
+現行アプリの Supabase 保存経路はJSONBを使用する。正規化tableには初回移行データを格納済み。切替前の正規化データは照合用であり、以後のJSONB更新は初回コピーに反映されない。
 
 baseline と `20260907121742_harden_dormant_normalized_tables.sql` は、後続migration適用前の10 tableをdeny-by-defaultとする。現在のliveは後述のownership RLSとauthenticated向けCRUDを適用済みで、anonにtable privilegeはない。
 
