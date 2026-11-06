@@ -20,6 +20,18 @@ The command uses an in-memory database without a remote connection. Each verifie
 
 `--execute-local <run-uuid> <approved-scope-sha256>` runs the same registered flow in isolation with the explicitly approved scope and run ID. The optional offset flag precedes execute mode. The CLI has no production connection path. `scripts/backfill-db.mjs` exposes transaction, ledger registration and failed-row retry operations for local validation. A separate production invocation with approved connection, scope, target identity and backup evidence must be reviewed before use.
 
+## Prepare an operator run
+
+Use the source SHA-256 from a fresh live read and the scoped restore snapshot for the same contents. This generator is for scopes with the approved JST exercise time decision.
+
+```powershell
+node scripts/prepare-backfill-run.mjs <pglite-module> <legacy-capture> <cloud-snapshot> <inventory-report> <decision-file> <restore-snapshot> <new-private-directory> <project-ref> <live-source-sha256>
+```
+
+The generator reconciles each aggregate in PGlite, then replays the exact SQL files and tests rollback and idempotency. Keep the resulting directory outside the repository because its SQL contains record values. The manifest binds the project, input hashes, source fingerprint, eligible row checksums, expected counts and exact SQL file hashes.
+
+After live approval, check the CLI's linked project ref, migration history, source fingerprint, manifest digest and all file digests. Use the approved directory with `supabase db query --linked --workdir <verified-workdir> --file <approved-file>`. Execute `00-register.sql` once, then each numbered apply file in order, and finish with `99-verify.sql`. Each apply file runs the existing operator routine and compares its full normalized projection in one database transaction. The last file reads the target again and checks every projection and entity count. Stop on any failure. Keep CLI error details private because they can contain SQL and record values. Inspect the registered run and preserve applied rows before deciding whether to retry a pending row.
+
 ## Ledger and reconciliation
 
 `migration_private.backfill_run` identifies the approved run, target label and scope SHA-256. `migration_private.backfill_row` registers a stable source ID, source kind, target owner/date/root ID, source and payload checksums, status, attempt count and safe failure reason. Register the exact approved manifest before applying rows. Store logs and reports privately. Record quarantine in the dry-run report and exclude it from the executable manifest.
