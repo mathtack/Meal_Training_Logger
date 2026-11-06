@@ -13,7 +13,7 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 
 アプリの1日分データ契約は `src/domain/type.ts` の `DailyRecordAggregate` を基準とする。
 
-保存先は development / production で切り替えていない。
+環境ごとの接続先と稼働中の保存経路は [現行環境](current-state.md) を参照する。
 
 - 未ログイン: DailyRecord の永続化操作にはログインが必要。
 - ログイン中: 保存・読込・履歴・削除は Supabase のみを正式経路とする。
@@ -29,15 +29,12 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 現行 application runtime はこの reader を import しない。Supabase Auth が session 維持に利用する
 storage は別責務であり、この変更では Auth 設定・session data の読み書き・ログイン挙動を変更しない。
 
-Supabase への保存・読出・削除は `src/app/dailyRecordSupabaseService.ts` が担当する。
-現行アプリが利用する主要テーブルは `public.daily_record_store` で、1ユーザー・1日につき1件の `record_json` として `DailyRecordAggregate` を保存する。
+Supabaseへの保存・読出・履歴・削除は `src/app/dailyRecordPersistence.ts` がbuild設定に対応するサービスへ委譲する。
 
 Supabase persistence service は save / read / delete の成功・not-found・errorを
 呼び出し側が区別できる result contract と、record date降順のremote history APIを持つ。
 service unit tests と DailyRecordForm component tests を持つ。履歴は Supabase の
 `record_date` と aggregate 内の `daily_record.updated_at` を使用する。
-
-現行 remote persistence は JSONB 保存。正規化 RDB 用のサービスは下記のとおり実装されているが、画面の保存・読込・履歴・削除経路からは利用しない。切替計画と進捗は GitHub Issues で管理する。
 
 Supabase client は development / production を問わず初期化されるため、ローカル開発でも `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が必要。
 
@@ -51,17 +48,16 @@ Supabase client は development / production を問わず初期化されるた�
 - `record_json`: jsonb
 - `saved_at`: timestamptz
 
-`user_id + record_date` は unique で、アプリはこの組み合わせを upsert key として利用する。
-RLS は有効で、ログインユーザーが自身の `user_id` の行だけを操作できる policy を持つ。
+`user_id + record_date` はuniqueで、1ユーザー・1日につき1件のaggregateを保持する。所有者RLSを適用し、アプリによる直接書き込みはDBが `jsonb` モードのときだけ許可する。
 
 ### `public.app_user`
 
 Supabase Auth のユーザーに対応するアプリユーザーテーブル。
 RLS は有効で、ユーザー本人の行のみ操作可能とする。
 
-## Normalized schema and dormant services
+## Normalized schema
 
-Supabase には以下の正規化 table も存在する。
+正規化データは以下のテーブルで構成する。
 
 - `daily_record`
 - `weight_record`
@@ -74,11 +70,7 @@ Supabase には以下の正規化 table も存在する。
 - `exercise_item`
 - `set_item`
 
-現行アプリの Supabase 保存経路はJSONBを使用する。正規化tableには初回移行データを格納済み。切替前の正規化データは照合用であり、以後のJSONB更新は初回コピーに反映されない。
-
-baseline と `20260907121742_harden_dormant_normalized_tables.sql` は、後続migration適用前の10 tableをdeny-by-defaultとする。現在のliveは後述のownership RLSとauthenticated向けCRUDを適用済みで、anonにtable privilegeはない。
-
-採用時は aggregate contract、write / read / delete unit、ownership chain、RLS、grant、migration / cutover を確定し、application code と後続 migration を同時に整備する。詳細 Backlog は Issue #47 を正とする。
+正規化テーブルは所有者RLSを適用する。authenticatedは自分の行を参照でき、保存・削除は所有者を確認するRPCを通す。
 
 ### Normalized schema and RPC contract
 
@@ -108,14 +100,14 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 - live の `daily_record_store(user_id, record_date)` には同一定義の UNIQUE constraint が2個あるが、baseline は `daily_record_store_user_date_key` 1個だけを持つ。
 
-`app_user.id` は `auth.users.id` を参照する。live にも source にも Auth user 作成時の `app_user` 自動作成 trigger はなく、現行 source は `app_user` を作成しない。新規 user provisioning 方法は未解決で、baseline では推測実装していない。
+`app_user.id` は `auth.users.id` を参照する。正規化経路では最初の保存時にRPCが `app_user` を作成する。
 
 ## SSOT rule
 
 優先順位:
 
 1. アプリのデータ契約: `src/domain/type.ts`
-2. 実際の永続化処理: `src/app/dailyRecordSupabaseService.ts`
+2. 永続化サービスの選択: `src/app/dailyRecordPersistence.ts`
 3. Supabase schema / RLS: `supabase/migrations/`
 
 `src/legacy/localStorage/readLegacyDailyRecords.ts` は migration input の読取境界であり、

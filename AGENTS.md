@@ -215,7 +215,7 @@ Documentation-only changeではapplication behaviorの再検証は必須とし�
 - Domain rules / normalization / reporting: `src/domain/`
 - Auth: `src/features/auth/`
 - Main input UI: `src/ui/DailyRecordForm.tsx`
-- Supabase persistence: `src/app/dailyRecordSupabaseService.ts`
+- Supabase persistenceの経路選択: `src/app/dailyRecordPersistence.ts`
 - Legacy localStorage reader: `src/legacy/localStorage/readLegacyDailyRecords.ts`
 - DB DDL / RLS: `supabase/migrations/`
 - Architecture explanation: `docs/architecture.md`
@@ -228,8 +228,7 @@ Documentation-only changeではapplication behaviorの再検証は必須とし�
 
 ## Supabase safety
 
-- 現行application persistenceは `public.daily_record_store` を利用する。
-- 未使用の正規化table群を現行persistenceとみなさない。
+- 本番の保存経路とDBの書込モードは `docs/current-state.md` を確認する。切替・復旧時は `docs/cutover.md` に従う。
 - live Supabase schema, RLS, Auth settings, production-like dataを明示指示なしに変更・削除しない。
 - schema変更はGit-managed migrationを正とし、実行前後に検証する。
 - `supabase/migrations/20260902090014_current_app_baseline.sql` は空の新規DB用であり、既存本番DBに実行しない。

@@ -193,9 +193,9 @@ Expected:
 
 - User A の行を変更・削除できない。
 
-### RLS-03 JSONB runtime regression after RLS changes
+### RLS-03 アプリの永続化経路と所有者分離
 
-正規化schemaやRLSの変更後も、現行JSONB persistenceのCRUDと所有者分離を確認する。
+schemaやRLSの変更後に、対象環境の書込モードでCRUDと所有者分離を確認する。
 
 1. 既存の受入テストユーザーでログインし、browser DevToolsのNetwork tabでログを保持する。
 2. 既存データと重ならないテスト専用日付を選び、体重・体調・食事・運動に識別可能な値を入力して保存する。
@@ -207,7 +207,7 @@ Expected:
 Expected:
 
 - create / reload / update / history / deleteが従来どおり成功する。
-- DailyRecordの永続化requestは `daily_record_store` を利用し、未使用の正規化10 tableへrequestしない。
+- 正規化モードでは読込・履歴が `daily_record` を起点にし、保存・削除は対応するRPCを利用する。JSONBモードの復旧検証では `daily_record_store` を利用する。
 - 現行CRUDでpermission denied、401、403が発生しない。
 - テスト対象外の日付と他ユーザーの記録は変化しない。
 

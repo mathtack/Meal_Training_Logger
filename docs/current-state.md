@@ -50,14 +50,12 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 
 ## Current runtime facts
 
-- DailyRecordの正式remote persistenceは Supabase `public.daily_record_store`。
-- liveの正規化10 table群には所有者RLSとauthenticated向けCRUDを適用済み。現行runtimeはJSONBを使用する。詳細は `docs/database.md`。
+- Vercel本番は `VITE_DAILY_RECORD_PERSISTENCE=normalized` でビルドした版を使用する。後続の本番ビルドも同じ設定を指定する。
+- Supabase本番は `20261106033054_atomic_cutover_mirror.sql` を適用済みで、DB書込モードは `normalized`。DailyRecordは正規化テーブルを正本とし、`public.daily_record_store` は復旧用mirrorとして使う。
 - ログイン済みユーザーの save / load / history / delete は Supabase基準。
 - read error時にlegacy localStorageを正式データとして自動fallbackしない。
 - 通常runtimeは `daily_record:*` localStorageを読書きしない。
 - `src/legacy/localStorage/readLegacyDailyRecords.ts` は将来migration調査用のread-only入口であり、通常runtimeから利用しない。
-- 未使用の正規化10 table群は現行application persistenceではない。
-- RepositoryのUIはbuild設定でnormalized経路を選べる。本番deploymentはJSONB経路を使用中。詳細は `docs/database.md` を参照する。
 
 詳細な現行仕様は `docs/architecture.md` と `docs/database.md` を正とする。
 
@@ -68,7 +66,7 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 - `supabase/migrations/20260902090014_current_app_baseline.sql` は空の新規DB用。
 - **既存本番DBにbaseline migrationを実行しない。**
 - 既存live DBのmigration historyには `20260902090014` をschema適用済みとして履歴だけ接続し、`20260907121742` のdeny-by-default migrationを適用済み。baseline SQL自体はliveで実行していない。
-- 未使用正規化tableを安全確認なしにruntime persistenceへcutoverしない。
+- 本番の書込モードや公開するアプリの保存経路を変更する場合は `docs/cutover.md` に従う。
 
 ## SSOT map
 

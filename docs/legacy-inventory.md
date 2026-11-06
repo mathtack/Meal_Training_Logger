@@ -38,7 +38,7 @@ digest一致は2回の読み取り時点の一致を示す。browser全体のloc
 
 ## Cloud snapshot / comparison
 
-対象projectとownerを確認した上で、現行 `public.daily_record_store` をread-onlyで最新取得する。
+JSONBからの移行調査では、対象projectとownerを確認して `public.daily_record_store` をread-onlyで取得する。本番で有効な保存経路は [現行環境](current-state.md) を参照する。
 1 snapshotの全対象rowsを取得し、pagination / API上限による欠落がないことを件数照合する。
 snapshot途中の更新や全件取得未確認の場合は `complete: true` としない。
 過去の件数を流用しない。private cloud exportの形式:
