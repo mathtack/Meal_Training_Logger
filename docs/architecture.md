@@ -64,20 +64,19 @@ Supabase Auth の session storage は別責務であり、この reader の対�
 
 - Auth 確認中は DailyRecord の入力・永続化 UI を表示しない。
 - 未ログイン時はログインを要求し、保存・読込・履歴・削除を提供しない。
-- ログイン中の保存・読込・履歴・削除は `dailyRecordSupabaseService` を利用する。
+- ログイン中の保存・読込・履歴・削除は `dailyRecordPersistence` がbuild設定に対応するSupabaseサービスへ委譲する。
 - read の `not_found` はその日付の新規レコード、`error` は読込失敗として扱う。
 - read error 時に localStorage を正式データとして自動採用しない。
 - save / delete の成功結果を受け取った後だけ、画面の保存済み状態・履歴を更新する。
 
-クラウド保存前の aggregate 正規化、認証ユーザー・対象日付の適用、最終保存時刻の付与は
-`src/app/dailyRecordCloud.ts` が担当する。
+クラウド保存前のaggregate正規化と認証ユーザー・対象日付の適用は `src/app/dailyRecordCloud.ts` が担当する。
+JSONB経路の保存時刻はアプリで付与し、正規化経路はDBが返したroot identityと時刻を画面に反映する。
 
 旧 localStorage repository / service / write storage は廃止済み。browser に存在する
 `daily_record:<ISODate>` は削除せず、明示的な legacy reader に渡した場合だけ読み取れる。
 この reader は `DailyRecordForm` を含む通常 runtime route から参照しない。
 
-現行 remote persistence は `public.daily_record_store.record_json` へ `DailyRecordAggregate` 全体を JSONB 保存する方式。
-DB構成・安全条件は `docs/database.md` を参照する。
+本番で有効な経路は [現行環境](current-state.md)、各経路のDB構成と契約は [Database](database.md) を参照する。
 
 ## Design principles
 

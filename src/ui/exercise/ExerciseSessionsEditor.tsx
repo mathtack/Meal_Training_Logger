@@ -12,6 +12,7 @@ import type {
 } from "../../domain/type";
 import { LOAD_UNIT_LABEL } from "../../domain/labels/wellnessLabels";
 import { generateUUID } from "../../domain/generateUUID";
+import { exerciseClockTime } from "../../domain/exerciseClockTime";
 
 type Props = {
   record: DailyRecordAggregate;
@@ -94,10 +95,7 @@ function createItemBase(
 }
 
 function toTimeInputValue(iso?: string | null): string {
-  if (!iso) return "";
-  const tIndex = iso.indexOf("T");
-  if (tIndex === -1) return "";
-  return iso.slice(tIndex + 1, tIndex + 6); // HH:MM
+  return exerciseClockTime(iso) ?? "";
 }
 
 function buildIsoDateTime(
@@ -106,7 +104,7 @@ function buildIsoDateTime(
 ): string | null {
   if (!time) return null;
   const date = baseDate ?? new Date().toISOString().slice(0, 10); // fallbackで今日
-  return `${date}T${time}:00`;
+  return `${date}T${time}:00+09:00`;
 }
 
 function parseNumberOrNull(value: string): number | null {

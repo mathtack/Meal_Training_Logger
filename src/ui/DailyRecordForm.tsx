@@ -5,23 +5,14 @@ import type {
   DailyRecordSummary,
   ISODate,
 } from "../domain/type";
-import {
-  createEmptyCloudDailyRecord,
-  normalizeCloudDailyRecord,
-  prepareDailyRecordForCloudSave,
-} from "../app/dailyRecordCloud";
+import { createEmptyCloudDailyRecord } from "../app/dailyRecordCloud";
+import { getDailyRecordPersistence } from "../app/dailyRecordPersistence";
 import { ExerciseSessionsEditor } from "./exercise/ExerciseSessionsEditor";
 import { WeightEditor } from "./weights/WeightEditor";
 import { WellnessEditor } from "./wellness/WellnessEditor";
 import { MealEditor } from "./meal/MealEditor";
 import { DailyRecordReportView } from "../domain/report/DailyRecordReportView";
 import { useAuth } from "../features/auth/AuthContext";
-import {
-  saveDailyRecordToSupabase,
-  fetchDailyRecordFromSupabase,
-  deleteDailyRecordFromSupabase,
-  fetchDailyRecordHistoryFromSupabase,
-} from "../app/dailyRecordSupabaseService";
 
 type TabKey = "weight" | "wellness" | "meal" | "exercise";
 const TAB_ORDER: TabKey[] = ["weight", "wellness", "meal", "exercise"];
@@ -133,6 +124,7 @@ function CloudPersistenceNotice({ message }: { message: string }) {
 }
 
 function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
+  const persistence = getDailyRecordPersistence();
   const initialDate = useRef<ISODate>(todayISODate()).current;
   const [recordDate, setRecordDate] = useState<ISODate>(initialDate);
   const [tab, setTab] = useState<TabKey>("exercise"); // 最優先が運動なのでここから
@@ -218,20 +210,15 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
 
     const sourceRecord = record;
     const sourceJson = toJson(sourceRecord);
-    const prepared = prepareDailyRecordForCloudSave({
-      record: sourceRecord,
-      userId,
-      date: recordDate,
-    });
 
     setIsSaving(true);
     setStatus("クラウドへ保存しています…");
 
     try {
-      const result = await saveDailyRecordToSupabase({
+      const result = await persistence.save({
         userId,
         date: recordDate,
-        record: prepared,
+        record: sourceRecord,
       });
 
       if (result.status === "error") {
@@ -239,8 +226,8 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
         return false;
       }
 
-      setRecord((current) => (toJson(current) === sourceJson ? prepared : current));
-      setBaselineJson(toJson(prepared));
+      setRecord((current) => (toJson(current) === sourceJson ? result.record : current));
+      setBaselineJson(toJson(result.record));
       setHistoryReloadVersion((version) => version + 1);
       setStatus("クラウドへ保存しました。");
       return true;
@@ -278,7 +265,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
     setStatus(`クラウドから ${date} の記録を削除しています…`);
 
     try {
-      const result = await deleteDailyRecordFromSupabase({
+      const result = await persistence.remove({
         userId,
         date,
       });
@@ -321,7 +308,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
       setHistoryLoadError("");
 
       try {
-        const result = await fetchDailyRecordHistoryFromSupabase({ userId });
+        const result = await persistence.history({ userId });
         if (cancelled) return;
 
         if (result.status === "success") {
@@ -344,7 +331,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [historyReloadVersion, userId]);
+  }, [historyReloadVersion, persistence, userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -355,7 +342,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
       setStatus("クラウドから記録を読み込んでいます…");
 
       try {
-        const result = await fetchDailyRecordFromSupabase({ userId, date: recordDate });
+        const result = await persistence.read({ userId, date: recordDate });
         if (cancelled) return;
 
         if (result.status === "error") {
@@ -368,7 +355,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
 
         const loadedRecord =
           result.status === "found"
-            ? normalizeCloudDailyRecord({ record: result.record, userId, date: recordDate })
+            ? result.record
             : createEmptyCloudDailyRecord({ userId, date: recordDate });
 
         setRecord(loadedRecord);
@@ -395,7 +382,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [recordDate, recordReloadVersion, userId]);
+  }, [persistence, recordDate, recordReloadVersion, userId]);
 
   // タブ切替時：該当セクションの先頭入力にフォーカス
   useEffect(() => {

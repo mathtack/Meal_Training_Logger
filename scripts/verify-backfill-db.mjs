@@ -24,7 +24,7 @@ try {
   const apply = input => applyAndReconcileBackfillRow(db, run, input, mapNormalizedDailyRecord, backfillChecksums);
   const counts = async () => Promise.all(tableNames.map(async table =>
     (await db.query(`select count(*)::integer as n from public.${table}`)).rows[0].n));
-  await initializeBackfillTestDatabase(db);
+  await initializeBackfillTestDatabase(db, "20261105220611_narrow_jsonb_runtime_access.sql");
   await db.query("insert into auth.users(id) values ($1), ($2)", [owner, foreign]);
   await db.query("insert into public.app_user(id) values ($1)", [owner]);
   await db.query("insert into public.daily_record_store(id,user_id,record_date,record_json) values ($1,$2,$3,$4::jsonb)",

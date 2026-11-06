@@ -87,18 +87,20 @@ baseline と `20260907121742_harden_dormant_normalized_tables.sql` は、後続m
 `20260911091026_normalized_atomic_write_rpc.sql` はauthenticated ownership RLSと明示grant、`save_daily_record_normalized(jsonb)` を定義する。RPCは `SECURITY INVOKER`、空の `search_path`、authenticated限定EXECUTEとし、最初の保存で `app_user` を冪等作成する。同じuser/dateのrootをlockし、root ID / created_atを維持して全childをtransaction内で置換する。root updated_atはDB transaction時刻とする。schema contractとRPCの両migrationはlive適用済み。
 
 - `src/app/dailyRecordNormalizedWriteMapper.ts` / `dailyRecordNormalizedWriteService.ts`: aggregateの検証・order正規化と保存RPC呼出。
-- `src/app/dailyRecordNormalizedQueryService.ts`: root起点の1回のrelational read、root列だけのhistory、root削除とFK cascade。親子関係はmigrationのcomposite FK名を指定する。
+- `src/app/dailyRecordNormalizedQueryService.ts`: root起点のrelational read、root列だけのhistory、atomic delete RPC。親子関係はmigrationのcomposite FK名を指定する。
 - `src/app/dailyRecordNormalizedReadMapper.ts`: DB responseからaggregateへ復元。全childのowner / parent ID、型、必須field、TEXT / SETSを検証し、不正な応答をpartial recordとして返さない。wellnessはnull / 0行をnull、1行をobjectとして復元し、複数行を拒否する。
 
 読込は各階層の保存済みorderでsortし、order値、ID、timestamp、foodのnullを保持する。DB専用child user_idとrelation fieldをdomain objectへ持ち込まない。historyは `record_date` 降順のkeyset paginationを使い、空pageまで取得する。途中の失敗時にpartial historyを成功扱いにしない。
 
-readは `found / not_found / error`、deleteは `deleted / not_found / error`、historyは `success / error` を返す。deleteはuser/dateで絞った1 rootの返却identityを確認する。cutover期間のrollback mirrorはこの削除サービスには含まれない。FoodMaterialは現行aggregateに存在しないためread/write mapperの対象外であり、root削除時はFK cascadeに含まれる。
+readは `found / not_found / error`、deleteは `deleted / not_found / error`、historyは `success / error` を返す。delete RPCは認証userと指定dateでrootを削除し、clientは返却identityを確認する。FoodMaterialは現行aggregateに存在しないためread/write mapperの対象外であり、root削除時はFK cascadeに含まれる。
 
-これらのサービスはcurrent UIからimportしない。実PostgRESTでのrelationship解決とAPIの行数上限は、live適用・切替時に実環境で検証する。
+`src/app/dailyRecordPersistence.ts` はbuild時の `VITE_DAILY_RECORD_PERSISTENCE` でUI経路を選択する。既定値は `jsonb`。 `normalized` では読込・履歴・保存・削除を正規化サービスへ接続し、エラーは画面に伝える。別の保存先への自動fallbackは行わない。
 
 `20261105214519_private_backfill_ledger.sql` はnormalized writerを共通化し、private ledgerと管理者向けinvoker routineを追加する。live適用済み。台帳と管理者向けroutineはbrowser roleからアクセスできず、private schemaはData APIに公開されていない。検証手順は [backfill runbook](backfill.md) を参照する。
 
 `20261105220611_narrow_jsonb_runtime_access.sql` はlive適用済み。既存JSONB経路のownership policyをauthenticatedに限定し、`app_user` のSELECT / INSERT / UPDATEと `daily_record_store` のCRUDをauthenticatedへgrantする。
+
+`20261106033054_atomic_cutover_mirror.sql` はDBの書込モードとmirror対応RPCを追加する。本番への適用状況は [現行環境](current-state.md) を参照する。保存と削除は正規化データとJSONB mirrorを同一transactionで更新する。mirrorは保存済みの正規化データから導出し、運動時刻はJSTのoffset付きで格納する。書込モードと復旧手順は [切替runbook](cutover.md) を参照する。
 
 ## Baseline differences from live
 

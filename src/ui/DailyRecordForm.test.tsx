@@ -10,6 +10,10 @@ const mocks = vi.hoisted(() => ({
   fetchHistory: vi.fn(),
   saveRecord: vi.fn(),
   deleteRecord: vi.fn(),
+  readNormalized: vi.fn(),
+  historyNormalized: vi.fn(),
+  saveNormalized: vi.fn(),
+  deleteNormalized: vi.fn(),
 }));
 
 vi.mock("../features/auth/AuthContext", () => ({
@@ -21,6 +25,16 @@ vi.mock("../app/dailyRecordSupabaseService", () => ({
   fetchDailyRecordHistoryFromSupabase: mocks.fetchHistory,
   saveDailyRecordToSupabase: mocks.saveRecord,
   deleteDailyRecordFromSupabase: mocks.deleteRecord,
+}));
+
+vi.mock("../app/dailyRecordNormalizedQueryService", () => ({
+  fetchDailyRecordNormalized: mocks.readNormalized,
+  fetchDailyRecordHistoryNormalized: mocks.historyNormalized,
+  deleteDailyRecordNormalized: mocks.deleteNormalized,
+}));
+
+vi.mock("../app/dailyRecordNormalizedWriteService", () => ({
+  saveDailyRecordNormalized: mocks.saveNormalized,
 }));
 
 vi.mock("./exercise/ExerciseSessionsEditor", () => ({
@@ -35,6 +49,7 @@ vi.mock("./exercise/ExerciseSessionsEditor", () => ({
       <span data-testid="record-id">{record.daily_record.id}</span>
       <span data-testid="record-owner">{record.daily_record.user_id}</span>
       <span data-testid="record-date">{record.daily_record.record_date}</span>
+      <span data-testid="record-updated">{record.daily_record.updated_at}</span>
       <button
         type="button"
         onClick={() =>
@@ -126,6 +141,37 @@ describe("DailyRecordForm cloud persistence routing", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("uses the selected normalized path and adopts the database save identity", async () => {
+    vi.stubEnv("VITE_DAILY_RECORD_PERSISTENCE", "normalized");
+    const date = today();
+    const record = createRecord(date);
+    const dbTimestamp = "2026-11-06T00:03:04+00:00";
+    mocks.readNormalized.mockResolvedValue({ status: "found", record });
+    mocks.historyNormalized.mockResolvedValue({ status: "success", entries: [] });
+    mocks.saveNormalized.mockResolvedValue({ status: "saved", identity: { ...record.daily_record, updated_at: dbTimestamp } });
+    render(<DailyRecordForm />);
+    const button = await screen.findByRole("button", { name: "保存" });
+    await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(button);
+    await screen.findByText("クラウドへ保存しました。");
+    expect(screen.getByTestId("record-updated").textContent).toBe(dbTimestamp);
+    expect(mocks.readNormalized).toHaveBeenCalledWith({ userId: USER_ID, date });
+    expect(mocks.historyNormalized).toHaveBeenCalledWith({ userId: USER_ID });
+    expect(mocks.fetchRecord).not.toHaveBeenCalled();
+    expect(mocks.saveRecord).not.toHaveBeenCalled();
+  });
+
+  it("reports normalized read failure without loading JSONB", async () => {
+    vi.stubEnv("VITE_DAILY_RECORD_PERSISTENCE", "normalized");
+    mocks.readNormalized.mockResolvedValue({ status: "error", message: "normalized unavailable" });
+    mocks.historyNormalized.mockResolvedValue({ status: "success", entries: [] });
+    render(<DailyRecordForm />);
+    await screen.findByText(/normalized unavailable/);
+    expect(mocks.fetchRecord).not.toHaveBeenCalled();
+    expect((screen.getByRole("button", { name: "保存" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("waits for authentication before reading cloud data", () => {

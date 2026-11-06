@@ -1,4 +1,5 @@
 // src/domain/report/dailyRecordReport.ts
+import { exerciseClockTime } from "../exerciseClockTime";
 import type {
   DailyRecordAggregate,
   ISODateTime,
@@ -406,8 +407,8 @@ function buildExerciseSessionHeader(
   const s = sessionAgg.session;
   let header = `Session #${index}`;
 
-  const start = formatTime(s.started_at ?? null);
-  const end = formatTime(s.ended_at ?? null);
+  const start = exerciseClockTime(s.started_at)?.replace(/^0/, "") ?? null;
+  const end = exerciseClockTime(s.ended_at)?.replace(/^0/, "") ?? null;
 
   if (start || end) {
     header += " ";

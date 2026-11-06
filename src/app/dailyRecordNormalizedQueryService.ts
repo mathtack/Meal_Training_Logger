@@ -78,15 +78,13 @@ export const deleteDailyRecordNormalized = async (
   params: RecordParams,
 ): Promise<SupabaseDeleteResult> => {
   try {
-    const { data, error } = await supabase.from("daily_record").delete()
-      .eq("user_id", params.userId).eq("record_date", params.date)
-      .select("id,user_id,record_date");
+    const { data, error } = await supabase.rpc("delete_daily_record_normalized", { p_date: params.date });
     if (error) return { status: "error", message: error.message };
-    if (!Array.isArray(data) || data.length > 1
-      || data.some((row) => !isNormalizedDeletedRow(row, params))) {
+    if (data === null) return { status: "not_found" };
+    if (!isNormalizedDeletedRow(data, params)) {
       throw new Error("Supabase returned an invalid normalized delete response.");
     }
-    return { status: data.length ? "deleted" : "not_found" };
+    return { status: "deleted" };
   } catch (error) {
     return errorResult(error);
   }

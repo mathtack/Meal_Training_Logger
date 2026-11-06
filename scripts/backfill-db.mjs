@@ -35,7 +35,7 @@ export async function registerBackfillRun(db, run, rows) {
 }
 
 // These identifiers are fixed schema names. The owner and every row ID are bound values.
-async function readNormalized(tx, row) {
+export async function readNormalized(tx, row) {
   const root = (await tx.query(`select to_jsonb(d) as data from public.daily_record d
     where user_id = $1 and record_date = $2`, [row.owner, row.date])).rows[0]?.data;
   if (!root) throw Error("missing_normalized_root");

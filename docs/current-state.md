@@ -29,8 +29,8 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 
 - `npm run build`: PASS
 - `TZ=Asia/Tokyo npm test -- --run`: PASS
-  - 16 test files
-  - 123 tests passed
+  - 17 test files
+  - 126 tests passed
 - `npm run deps:circular`: PASS
   - 0 circular
 - `npm run lint`: FAIL
@@ -57,7 +57,7 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 - 通常runtimeは `daily_record:*` localStorageを読書きしない。
 - `src/legacy/localStorage/readLegacyDailyRecords.ts` は将来migration調査用のread-only入口であり、通常runtimeから利用しない。
 - 未使用の正規化10 table群は現行application persistenceではない。
-- normalized write / read / history / deleteサービスはrepositoryに存在するが、current UIからは利用しない。詳細は `docs/database.md` を参照する。
+- RepositoryのUIはbuild設定でnormalized経路を選べる。本番deploymentはJSONB経路を使用中。詳細は `docs/database.md` を参照する。
 
 詳細な現行仕様は `docs/architecture.md` と `docs/database.md` を正とする。
 

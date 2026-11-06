@@ -129,23 +129,21 @@ describe("normalized query service over the real Supabase HTTP client", () => {
     expect((await fetchDailyRecordHistoryNormalized(params)).status).toBe("error");
   });
 
-  it("deletes only the root with both filters and confirms its identity", async () => {
-    respond([{ id: fixtureId(2), user_id: params.userId, record_date: params.date }]);
+  it("deletes through the mirror RPC and confirms the returned owner/date", async () => {
+    respond({ id: fixtureId(2), user_id: params.userId, record_date: params.date });
     expect(await deleteDailyRecordNormalized(params)).toEqual({ status: "deleted" });
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(fetchMock.mock.calls[0][1].method).toBe("DELETE");
-    expect(requestedUrl().pathname).toBe("/rest/v1/daily_record");
-    expect(requestedUrl().searchParams.get("user_id")).toBe(`eq.${params.userId}`);
-    expect(requestedUrl().searchParams.get("record_date")).toBe(`eq.${params.date}`);
-    expect(requestedUrl().searchParams.get("select")).toBe("id,user_id,record_date");
+    expect(fetchMock.mock.calls[0][1].method).toBe("POST");
+    expect(requestedUrl().pathname).toBe("/rest/v1/rpc/delete_daily_record_normalized");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body as string)).toEqual({ p_date: params.date });
   });
 
   it("returns not_found when no root is deleted", async () => {
-    respond([]);
+    respond(null);
     expect(await deleteDailyRecordNormalized(params)).toEqual({ status: "not_found" });
   });
 
-  it.each([null, [{}], [{ id: fixtureId(2), user_id: "other", record_date: normalizedDate }]])(
+  it.each([[], {}, { id: fixtureId(2), user_id: "other", record_date: normalizedDate }])(
     "rejects an invalid delete confirmation %j", async (data) => {
       respond(data);
       expect((await deleteDailyRecordNormalized(params)).status).toBe("error");
