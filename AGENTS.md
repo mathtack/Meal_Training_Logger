@@ -120,6 +120,9 @@ Completion / Handoffには最低限以下を残す。
 - destructive operation (`reset --hard`, force push, history rewrite等) は明示指示なしに行わない。
 - push / PR / mergeはIssueまたはユーザー指示の範囲だけで行う。
 - working treeがdirty、fast-forward不可、base branchが曖昧な場合は変更開始前に停止する。
+- 完了済みIssueの不要branchは、子Issueの成果が親branchに、親Issueの成果が `master` に完全に取り込まれている場合に整理できる。
+- 整理前に `git fetch --prune origin` で最新化し、統合先にないcommitが対象branchに残っていないことを確認する。working treeをcleanにし、対象branch以外をcheckoutする。
+- 整理は `git branch -d` または取り込みを確認済みのremote branchに対する通常の削除を用いる。条件を満たすremote branchの整理はpush制限の例外とする。取り込みを確認できないbranchは保留する。
 
 ### Parent / Epicがある場合
 
