@@ -52,6 +52,7 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 
 - Vercel本番は `VITE_DAILY_RECORD_PERSISTENCE=normalized` でビルドした版を使用する。後続の本番ビルドも同じ設定を指定する。
 - Supabase本番は `20261125212008_retire_jsonb_runtime.sql` を適用済みで、DB書込モードは `normalized`。DailyRecordは正規化テーブルに保存する。旧JSONBの自動更新とブラウザ向けAPI権限は退役済み。
+- 本番の `public.daily_record_store` は空の旧テーブル。運用は正規化版を対象とする。
 - ログイン済みユーザーの save / load / history / delete は Supabase基準。
 - read error時にlegacy localStorageを正式データとして自動fallbackしない。
 - 通常runtimeは `daily_record:*` localStorageを読書きしない。

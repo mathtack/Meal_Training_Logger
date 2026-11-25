@@ -48,7 +48,7 @@ Supabase client は development / production を問わず初期化されるた�
 - `record_json`: jsonb
 - `saved_at`: timestamptz
 
-`user_id + record_date` はuniqueで、1ユーザー・1日につき1件のaggregateを保持する。所有者RLSを適用し、アプリによる直接書き込みはDBが `jsonb` モードのときだけ許可する。
+`user_id + record_date` はuniqueで、移行前は1ユーザー・1日につき1件のaggregateを保持した。移行済みの本番状態は [現行環境](current-state.md) を参照する。
 
 ### `public.app_user`
 
@@ -94,7 +94,7 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 `20261106033054_atomic_cutover_mirror.sql` はDBの書込モードとmirror対応RPCを追加する。本番への適用状況は [現行環境](current-state.md) を参照する。保存と削除は正規化データとJSONB mirrorを同一transactionで更新する。mirrorは保存済みの正規化データから導出し、運動時刻はJSTのoffset付きで格納する。書込モードと復旧手順は [切替runbook](cutover.md) を参照する。
 
-`20261125212008_retire_jsonb_runtime.sql` はmirror更新とブラウザの旧JSONB権限を退役するforward migration。正規化RPCの入口と凍結機能を維持し、JSONBは保管データとして残す。このmigrationまで適用する空の新規DBはnormalizedモードで開始する。既存のJSONB-only DBは正規化への切替を完了してから適用する。本番の適用状況は [現行環境](current-state.md)、退役後の再構成手順は [切替runbook](cutover.md) を参照する。
+`20261125212008_retire_jsonb_runtime.sql` はmirror更新とブラウザの旧JSONB権限を退役するforward migration。正規化RPCの入口と凍結機能を維持し、JSONB行の処分は移行照合後の操作として扱う。このmigrationまで適用する空の新規DBはnormalizedモードで開始する。既存のJSONB-only DBは正規化への切替を完了してから適用する。本番の状態は [現行環境](current-state.md)、退役条件は [切替runbook](cutover.md) を参照する。
 
 ## Baseline differences from live
 

@@ -1,8 +1,8 @@
-# 正規化DBへの切替と復旧
+# 正規化DBへの切替とJSONB退役
 
 ## 前提
 
-承認済みのメンテナンス枠で、対象DB・対象リリース・復旧用JSONBリリース・判定担当・mirror保持期間を確定する。Git管理のmigration、対象ユーザー範囲、バックアップと復元手段を確認する。保持期間中はmirrorを削除しない。
+切替前の環境では、承認済みのメンテナンス枠で対象DB・対象リリース・判定担当・mirror保持期間を確定する。Git管理のmigration、対象ユーザー範囲、バックアップを確認する。保持期間中はmirrorを削除しない。本番の運用状態は [現行環境](current-state.md) を参照する。
 
 アプリの経路はbuild時の `VITE_DAILY_RECORD_PERSISTENCE`（`jsonb` または `normalized`）で決まり、DBの書込許可は `migration_private.daily_record_write_mode` が管理する。 `frozen` は両経路のアプリ書込を拒否する。モード変更は進行中の書込transactionが終わるまで待機する。
 
@@ -14,18 +14,10 @@
 4. 採用済みの正規化データを基準にmirrorを照合する。不足分は対象ownerとroot IDを確認して管理者用 `migration_private.upsert_daily_record_mirror(owner, root_id)` で補う。値が異なる行や余分なmirrorがある場合は、原因と処置を確定するまで停止する。全件でowner/date、件数、canonical content hashと必要なidentityが一致することを確認する。
 5. 書込停止中に承認済みの正規化ビルドを昇格し、productionの認証、読込、履歴と対象リリースを確認する。照合と読込が合格したら `frozen` から `normalized` へ変更し、正規化save/deleteの成功・両storeの整合・旧ビルドからの書込拒否を確認する。合格後にメンテナンスを解除する。
 
-## 復旧
+## JSONBの退役
 
-切替後に復旧判定が出たら `normalized` から `frozen` に変更し、進行中の書込を止める。切替後の変更を含め、正規化データとmirrorのowner/date、件数、canonical content hash、identityを照合する。不一致時は書込停止を維持し、直近の復旧点と差分を確認する。照合後に承認済みのJSONBリリースを復元し、読込と履歴を確認する。 `frozen` から `jsonb` に戻してJSONBのCRUDを検証した後、メンテナンスを解除する。再切替時は復旧中のJSONB差分を改めて照合する。
+保持期間を終え、正規化とJSONBのowner/date・canonical hashの全件照合を済ませてから、承認された退役migrationを適用する。
 
-## JSONB自動更新の退役
+`20261125212008_retire_jsonb_runtime.sql` は正規化RPCの入口を維持し、JSONBの自動更新とブラウザの旧JSONB table/column権限を退役する。適用時はDBを `normalized → frozen` に変更する。適用後に正規化の読込と権限を確認して `frozen → normalized` に戻し、検証用レコードで保存・更新・削除を確認する。
 
-保持期間と全件照合を確認し、対象migration・書込停止枠・復旧点・復旧手順について承認を得る。適用前に正規化とJSONBの現在のowner/date・canonical hashを確認して両storeを非公開でexportし、読み戻しと復元検証を行う。
-
-`20261125212008_retire_jsonb_runtime.sql` は、正規化RPCの入口を保ってJSONBの自動更新とブラウザの旧JSONB table/column権限を退役する。既存JSONBと台帳を保持する。適用前にDBモードを条件付きで `normalized → frozen` に変更し、進行中の書込が終わるまで待つ。migrationは凍結状態を維持する。適用後に正規化読込と権限、保管JSONBの不変を確認し、`frozen → normalized` に変更して承認済みの検証用1件で保存・更新・削除を確認する。両storeの同一日付が以降も一致するという切替期間の判定は終了し、正規化の正本とJSONBの保管時点をそれぞれ記録する。本番の適用状況は [現行環境](current-state.md) を参照する。
-
-## JSONB退役後の復旧
-
-書込を `frozen` にして最新の正規化データと保管JSONBを非公開にexportする。対象全owner/date、件数、再構成時の上書き・削除対象、JSONB権限の復元について承認を得てから、管理者が `supabase/operations/restore_jsonb_runtime.sql` を1 transactionとして実行する。
-
-このSQLは最新の正規化データから全件のJSONBを導出し、現在存在する日付をupsertし、正規化で削除済みの日付をJSONBから除去する。全件のprojection一致を確認してauthenticatedの旧CRUD権限を戻す。途中で失敗すると再構成と権限変更をまとめて取り消す。成功後も `frozen` を維持するので、承認済みJSONB版の読込・履歴を確認した後に管理者が別操作で `frozen → jsonb` に変更してCRUDを検証する。正規化の自動mirror更新は再開しない。正規化への再切替は復旧中のJSONB差分を照合する。
+旧JSONB行を削除する承認がある場合は、書込を凍結し、同一transaction内で照合済みの件数と指紋を再確認してから削除する。JSONBの残件数と正規化・台帳の指紋を確認し、正規化の書込を再開する。本番障害への対応は正規化版を対象とする。

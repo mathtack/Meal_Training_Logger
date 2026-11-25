@@ -8,7 +8,6 @@ import { normalizedRecordFixture, normalizedUserId, normalizedDate, fixtureId } 
 
 const { PGlite } = await import(pathToFileURL(resolve(process.argv[2])).href);
 const migration = await readFile(new URL("../supabase/migrations/20261125212008_retire_jsonb_runtime.sql", import.meta.url), "utf8");
-const recovery = await readFile(new URL("../supabase/operations/restore_jsonb_runtime.sql", import.meta.url), "utf8");
 const server = await createServer({ configFile: false, server: { middlewareMode: true, ws: false }, appType: "custom" });
 const db = new PGlite();
 try {
@@ -132,35 +131,16 @@ try {
   assert.equal((await db.query("select id from public.app_user")).rows.length, 1);
   assert.deepEqual(await archive(), preserved);
 
-  // Recovery is refused while normal writes are enabled.
-  await rollbackFailure(recovery);
+  // Removing the retired copy must not remove or recreate current records.
   await mode("frozen");
-  await db.exec(`
-    create trigger retirement_fail_recovery before insert on public.daily_record_store
-      for each row execute function public.retirement_fixture_failure();
-  `);
-  await rollbackFailure(recovery);
-  assert.deepEqual(await archive(), preserved);
-  assert.equal((await db.query("select has_table_privilege('authenticated','public.daily_record_store','SELECT') as allowed")).rows[0].allowed, false);
-  await db.exec("drop trigger retirement_fail_recovery on public.daily_record_store;");
-  await db.exec(recovery);
-  const reconstructed = await archive();
-  assert.equal(reconstructed.length, 1);
-  assert.equal(reconstructed[0].data.user_id, other);
-  assert.equal(reconstructed[0].data.record_json.daily_record.id, newRecord.daily_record.id);
-  await db.exec(recovery);
-  assert.equal((await archive()).length, 1);
+  await db.exec("delete from public.daily_record_store");
+  assert.deepEqual(await archive(), []);
+  await mode("normalized");
   await caller(other);
-  assert.equal((await db.query("select id from public.daily_record_store")).rows.length, 1);
-  await assert.rejects(save(newRecord), { code: "55000" });
-  await assert.rejects(db.query("delete from public.daily_record_store where false"), { code: "55000" });
-  await mode("jsonb");
-  await caller(owner);
-  assert.equal((await db.query("select id from public.daily_record_store")).rows.length, 0);
-  await caller(other);
-  await db.query("update public.daily_record_store set saved_at=now() where user_id=auth.uid()");
-  await assert.rejects(save(newRecord), { code: "55000" });
-  console.log("PASS: retirement preserves data; normalized CRUD/cascade/owner/freeze/failure atomicity; JSONB denied and static; recovery refreshes new rows, removes stale rows, rolls back on failure and keeps writes frozen");
+  assert.equal((await readNormalized(db, { owner: other, date })).id, newRecord.daily_record.id);
+  assert.equal((await save(newRecord)).id, newRecord.daily_record.id);
+  assert.deepEqual(await archive(), []);
+  console.log("PASS: normalized CRUD, ownership, write freeze and atomicity; retired JSONB stays empty after cleanup");
 } finally {
   await db.close();
   await server.close();

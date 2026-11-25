@@ -49,7 +49,7 @@ node scripts/verify-jsonb-retirement.mjs (Join-Path $dbTestDependencies 'node_mo
 
 `verify-cutover-mirror.mjs` は書込モード、所有者境界、正規化から導出したJST mirror、save/delete失敗時に両方の更新が取り消されること、JSONB経路の復旧を隔離DBで検証する。
 
-`verify-jsonb-retirement.mjs` はJSONB自動更新停止後の正規化CRUD、所有者分離、凍結・失敗時rollback、table/column権限の拒否、archive保持、最新データからの復旧再構成を検証する。旧JSONB権限・mirrorの検証スクリプトは各工程のmigrationまでを読み込む。
+`verify-jsonb-retirement.mjs` はJSONB自動更新停止後の正規化CRUD、所有者分離、凍結・失敗時rollback、table/column権限の拒否と、旧JSONB行の削除後も正規化の読込・保存が機能することを検証する。旧JSONB権限・mirrorの検証スクリプトは各工程のmigrationまでを読み込む。
 
 この検証はDBのRLS / FK semanticsを確認する。PostgREST serverを起動しないため、実環境のrelationship解決・API行数上限・認証付き通信はlive適用時のsystem testで別途確認する。HTTP contract testsは実際のsupabase-js clientと架空のfetch responseを使用する。
 
