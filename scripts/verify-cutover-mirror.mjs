@@ -36,7 +36,7 @@ try {
     const stored = (await db.query("select record_json from public.daily_record_store where user_id=$1 and record_date=$2", [owner,date])).rows[0].record_json;
     return { row, stored };
   };
-  await initializeBackfillTestDatabase(db);
+  await initializeBackfillTestDatabase(db, "20261106033054_atomic_cutover_mirror.sql");
   await db.query("insert into auth.users(id) values ($1),($2)", [owner,other]);
   await db.query("insert into public.app_user(id) values ($1)", [owner]);
   await caller(owner);

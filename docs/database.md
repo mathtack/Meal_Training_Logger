@@ -94,6 +94,8 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 `20261106033054_atomic_cutover_mirror.sql` はDBの書込モードとmirror対応RPCを追加する。本番への適用状況は [現行環境](current-state.md) を参照する。保存と削除は正規化データとJSONB mirrorを同一transactionで更新する。mirrorは保存済みの正規化データから導出し、運動時刻はJSTのoffset付きで格納する。書込モードと復旧手順は [切替runbook](cutover.md) を参照する。
 
+`20261125212008_retire_jsonb_runtime.sql` はmirror更新とブラウザの旧JSONB権限を退役するforward migration。正規化RPCの入口と凍結機能を維持し、JSONBは保管データとして残す。このmigrationまで適用する空の新規DBはnormalizedモードで開始する。既存のJSONB-only DBは正規化への切替を完了してから適用する。本番の適用状況は [現行環境](current-state.md)、退役後の再構成手順は [切替runbook](cutover.md) を参照する。
+
 ## Baseline differences from live
 
 安全な新規環境と意図された正規形を優先し、baseline には以下の意図的差分がある。

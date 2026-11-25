@@ -56,7 +56,8 @@ async function verify(liveLike, snapshot) {
       alter table public.daily_record_store add constraint daily_record_store_user_date_uniq unique (user_id, record_date);
     `);
     const before = await loadSnapshot(db, snapshot);
-    for (const file of (await readdir(migrations)).filter(name => name.endsWith(".sql") && name > hardening).sort()) {
+    for (const file of (await readdir(migrations)).filter(name => name.endsWith(".sql")
+      && name > hardening && name <= "20261105220611_narrow_jsonb_runtime_access.sql").sort()) {
       await db.exec(await readFile(new URL(file, migrations), "utf8"));
     }
     const after = (await db.query(`
