@@ -1,6 +1,7 @@
 // src/ui/weights/WeightEditor.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import type { DailyRecordAggregate, WeightRecord, ISODateTime } from "../../domain/type";
+import { generateUUID } from "../../domain/generateUUID";
 
 type Props = {
   record: DailyRecordAggregate;
@@ -12,9 +13,6 @@ const SLOT_MORNING = "MORNING";
 const SLOT_EVENING = "EVENING";
 
 const nowISO = (): ISODateTime => new Date().toISOString();
-
-const generateUUID = (): string =>
-  globalThis.crypto?.randomUUID?.() ?? `uuid_${Math.random().toString(16).slice(2)}_${Date.now()}`;
 
 function findBySlot(weights: WeightRecord[], slot: string): WeightRecord | undefined {
   return weights.find((w) => w.measurement_time_slot === slot);

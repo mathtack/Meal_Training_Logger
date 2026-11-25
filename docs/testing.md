@@ -11,7 +11,15 @@
 
 主な対象:
 
-- DailyRecord service / localStorage I/O
+- legacy `daily_record:*` reader の対象選別・診断・read-only 保証
+- offline legacy inventoryの原本digest / owner確認 / canonical比較 / conflict・quarantine境界（手順: `docs/legacy-inventory.md`）
+- backfillのowner適用・重複・採用判断・timezone・checksum。PGliteのledger / rollback / retry / idempotency検証は `node scripts/verify-backfill-db.mjs <pglite-module>`。
+- JSONB権限収束のfresh / live-like rehearsalは `node scripts/verify-jsonb-preflight.mjs <pglite-module> [private-scoped-snapshot]`。snapshot指定時は既存JSONB・profileのcountとchecksumも照合する。Auth IDは隔離DBのFK検証に使う。
+- Supabase persistence service contract / query / error handling
+- DailyRecordForm の認証 gate / cloud save・load・history・delete routing / localStorage 非依存
+- cloud 保存前の aggregate 正規化 / ownership / timestamp
+- normalized query serviceのHTTP request / result contract / history pagination
+- normalized read mapperの全階層order / nullable draft / ownership / parent / union検証
 - empty aggregate factory
 - weight / exercise / aggregate normalizer
 - DailyRecord report generation
@@ -24,6 +32,26 @@ npm test -- --run
 ```
 
 固定 offset 時刻の表示差を避けるため、現在は test 前に `TZ=Asia/Tokyo` を設定する。
+
+### Normalized database verification
+
+`scripts/verify-normalized-query-db.mjs` は外部接続を行わず、PGliteのin-memory PostgreSQLへGit-managed migrationsと架空の2ユーザーデータを構築する。root削除から全10 tableへのcascade、別user / 別dateの保持、RLS、anon拒否、history、再削除、既存JSONBの非変更を検証する。
+
+Node.js 22.18以上を使用する。検証依存を一時フォルダへ入れればapplicationのpackage / lockfileを変更せず実行できる。
+
+```powershell
+$dbTestDependencies = Join-Path ([IO.Path]::GetTempPath()) ('meal-logger-db-test-' + [guid]::NewGuid().ToString('N'))
+npm install --prefix $dbTestDependencies --no-save --package-lock=false @electric-sql/pglite@0.5.8
+node scripts/verify-normalized-query-db.mjs (Join-Path $dbTestDependencies 'node_modules/@electric-sql/pglite/dist/index.js')
+node scripts/verify-cutover-mirror.mjs (Join-Path $dbTestDependencies 'node_modules/@electric-sql/pglite/dist/index.js')
+node scripts/verify-jsonb-retirement.mjs (Join-Path $dbTestDependencies 'node_modules/@electric-sql/pglite/dist/index.js')
+```
+
+`verify-cutover-mirror.mjs` は書込モード、所有者境界、正規化から導出したJST mirror、save/delete失敗時に両方の更新が取り消されること、JSONB経路の復旧を隔離DBで検証する。
+
+`verify-jsonb-retirement.mjs` はJSONB自動更新停止後の正規化CRUD、所有者分離、凍結・失敗時rollback、table/column権限の拒否と、旧JSONB行の削除後も正規化の読込・保存が機能することを検証する。旧JSONB権限・mirrorの検証スクリプトは各工程のmigrationまでを読み込む。
+
+この検証はDBのRLS / FK semanticsを確認する。PostgREST serverを起動しないため、実環境のrelationship解決・API行数上限・認証付き通信はlive適用時のsystem testで別途確認する。HTTP contract testsは実際のsupabase-js clientと架空のfetch responseを使用する。
 
 ## Quality gate
 
@@ -54,12 +82,13 @@ Supabase Auth / CRUD / RLS / multi-device など、browser と実環境を必要
 - Supabase client / persistence
 - DailyRecord save / load / delete
 - RLS / schema
-- localStorage と Supabase の優先順位
+- localStorage fallback の有無と Supabase cloud SSOT routing
 
 ## Rules
 
 - test case を version 別 folder に複製しない。
 - 自動テストの SSOT は `src/**/*.test.ts`。
 - 手動 E2E / system test の SSOT は `docs/system-test.md`。
-- 現在の baseline や一時的な既知問題は `docs/current-state.md` に置く。
+- 現在有効な品質 baseline と環境固有の実行制約は `docs/current-state.md` に置く。
+- task固有の検証結果・FAIL・再開条件はGitHub Issueへ記録し、この文書へ進捗として蓄積しない。
 - 完了済み・廃止済み test plan は Git history に任せる。

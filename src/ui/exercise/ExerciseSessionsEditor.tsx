@@ -11,6 +11,8 @@ import type {
   UUID,
 } from "../../domain/type";
 import { LOAD_UNIT_LABEL } from "../../domain/labels/wellnessLabels";
+import { generateUUID } from "../../domain/generateUUID";
+import { exerciseClockTime } from "../../domain/exerciseClockTime";
 
 type Props = {
   record: DailyRecordAggregate;
@@ -18,9 +20,6 @@ type Props = {
 };
 
 const nowISO = () => new Date().toISOString();
-const uuid = (): UUID =>
-  (globalThis.crypto?.randomUUID?.() ??
-    `uuid_${Math.random().toString(16).slice(2)}_${Date.now()}`) as UUID;
 
 function swap<T>(arr: T[], i: number, j: number): T[] {
   const copy = [...arr];
@@ -32,7 +31,7 @@ function createSessionAgg(
   dailyRecordId: UUID,
   sessionOrder: number,
 ): ExerciseSessionAggregate {
-  const id = uuid();
+  const id = generateUUID();
   const now = nowISO();
   return {
     session: {
@@ -56,7 +55,7 @@ function createItemBase(
   itemOrder: number,
   style: RecordingStyle,
 ): ExerciseItem {
-  const id = uuid();
+  const id = generateUUID();
   const now = nowISO();
   const base = {
     id,
@@ -75,7 +74,7 @@ function createItemBase(
   }
 
   // SETS
-  const setId = uuid();
+  const setId = generateUUID();
   const set: SetItem = {
     id: setId,
     exercise_item_id: id,
@@ -96,10 +95,7 @@ function createItemBase(
 }
 
 function toTimeInputValue(iso?: string | null): string {
-  if (!iso) return "";
-  const tIndex = iso.indexOf("T");
-  if (tIndex === -1) return "";
-  return iso.slice(tIndex + 1, tIndex + 6); // HH:MM
+  return exerciseClockTime(iso) ?? "";
 }
 
 function buildIsoDateTime(
@@ -108,7 +104,7 @@ function buildIsoDateTime(
 ): string | null {
   if (!time) return null;
   const date = baseDate ?? new Date().toISOString().slice(0, 10); // fallbackで今日
-  return `${date}T${time}:00`;
+  return `${date}T${time}:00+09:00`;
 }
 
 function parseNumberOrNull(value: string): number | null {
@@ -120,7 +116,7 @@ function parseNumberOrNull(value: string): number | null {
 function createSet(itemId: UUID, setOrder: number): SetItem {
   const now = nowISO();
   return {
-    id: uuid(),
+    id: generateUUID(),
     exercise_item_id: itemId,
     set_order: setOrder,
     load_value: null,

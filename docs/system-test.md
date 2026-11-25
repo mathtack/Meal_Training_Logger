@@ -4,38 +4,59 @@
 
 - Supabase Auth (Magic Link)
 - DailyRecord save / load / delete
-- localStorage と Supabase の整合
+- Supabase cloud SSOT と legacy `daily_record:*` 非 fallback・非変更
 - RLS によるユーザー分離
 - PC / smartphone 間の同期
 - 通信失敗時の基本挙動
 
 ## Preconditions
 
-- `.env.local` に `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が設定されている。
-- Supabase の `app_user` / `daily_record_store` が利用可能。
-- `daily_record_store` は RLS 有効で、ログインユーザー自身の `user_id` の行だけ操作可能。
+- ローカルで実行する場合、`.env.local` に `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_DAILY_RECORD_PERSISTENCE=normalized` が設定されている。
+- Supabase の正規化テーブル、所有者RLS、保存・削除RPCが利用可能。
+- Auth と `app_user` に登録済みで、現在ログイン可能な受入テスト用メールアドレスを利用できる。
 - PC browser と smartphone browser、または独立した2ブラウザを利用できる。
 - RLS 確認用に必要であれば2ユーザーを用意する。
 
-保存先は development / production で切り替わらない。未ログイン時は localStorage のみ、ログイン中は localStorage と Supabase JSONB を併用する。
-未ログインで localStorage のみ利用する場合でも、Supabase client は起動時に初期化されるため環境変数は必要。
+DailyRecordの永続化操作にはログインが必要。正規化テーブルを保存先とする。旧localStorageデータの扱いは [現行環境](current-state.md) を参照する。
+Supabase client は起動時に初期化されるため、未ログイン表示の確認時も環境変数は必要。
 
 ## 0. Persistence routing
 
-### ROUTE-01 Logged-out localStorage only
+### ROUTE-01 Logged-out persistence gate
 
 1. logout して未ログイン状態にする。
-2. 他のテストと重ならない日付に、識別しやすい値で DailyRecord を入力する。
-3. 保存する。
-4. reload または別日へ移動後に同じ日付を開く。
-5. browser storage の `daily_record:<ISODate>` を確認する。
-6. Network tab で `daily_record_store` への保存 request が発生していないことを確認する。
+2. DailyRecord 領域を確認する。
+3. Network tab で DailyRecordのテーブル・RPCへのrequestが発生していないことを確認する。
 
 Expected:
 
-- 入力内容が localStorage から復元される。
-- `daily_record:<ISODate>` に DailyRecordAggregate が JSON 保存されている。
-- 未ログイン状態では Supabase `daily_record_store` への保存を行わない。
+- ログインが必要という案内が表示される。
+- DailyRecord の入力・保存・履歴・削除 UI は表示されない。
+- DailyRecordのクラウド保存先と `daily_record:*` localStorageへの読み書きは発生しない。
+
+### ROUTE-02 Read error does not fall back to localStorage
+
+1. ログイン状態で、テスト専用日付の localStorage に識別可能な legacy record がある状態を用意する。
+2. Network を offline にするなど、Supabase read を失敗させる。
+3. 同じ日付を画面で開く。
+
+Expected:
+
+- クラウド記録の読込失敗が表示される。
+- legacy localStorage record は正式データとして画面に表示されない。
+- 保存操作は read の再試行が成功するまで無効である。
+
+### ROUTE-03 Legacy localStorage data remains unchanged
+
+1. テスト専用日付の `daily_record:<ISODate>` key と value を控える。
+2. ログイン状態で同日付のクラウド読込・保存・履歴表示・削除を行う。
+3. 操作後と reload 後に同じ localStorage key と value を確認する。
+
+Expected:
+
+- legacy key と value は操作前のまま残る。
+- legacy record はクラウドへ自動保存されず、画面やクラウド履歴へ混入しない。
+- application は legacy data の書込・削除・clear を行わない。
 
 ## 1. Authentication
 
@@ -62,6 +83,20 @@ Expected:
 - 未ログイン表示へ戻る。
 - reload 後もログイン状態へ勝手に復帰しない。
 
+### AUTH-03 Same email re-login identity continuity
+
+1. 受入テスト用の既存メールアドレスでログインし、Auth の `user.id` とクラウド履歴を確認する。
+2. logout する。
+3. 同じメールアドレスへ Magic Link を送信し、再ログインする。
+4. Auth の `user.id` とクラウド履歴を再確認する。
+
+Expected:
+
+- 同じメールアドレスで再ログインできる。
+- 再ログイン前後で同じ Auth `user.id` になる。
+- 同じ `app_user` ownership の既存記録と履歴を引き続き利用できる。
+- 新規メールアドレスの provisioning はこの受入条件に含めない。
+
 ## 2. DailyRecord CRUD
 
 テスト専用の日付を利用し、既存の実データを変更しない。
@@ -71,13 +106,13 @@ Expected:
 1. 体重・体調・食事・運動を識別しやすい値で入力する。
 2. 保存する。
 3. 別日へ移動してから元の日付へ戻る、または reload する。
-4. Supabase `daily_record_store` を確認する。
+4. Supabaseの `daily_record` と対応する子テーブルを確認する。
 
 Expected:
 
 - 入力内容が復元される。
 - `user_id + record_date` に対応する行が1件存在する。
-- `record_json` が画面の DailyRecordAggregate と論理的に一致する。
+- 正規化テーブルから復元した DailyRecordAggregate が画面の記録と一致する。
 
 ### CRUD-02 Update
 
@@ -97,9 +132,9 @@ Expected:
 
 Expected:
 
-- localStorage から対象日が消える。
-- Supabase `daily_record_store` からも対象行が消える。
-- 再読込時に削除済みデータが復活しない。
+- Supabaseの `daily_record` から対象行が消え、対応する子レコードも削除される。
+- 削除成功後に画面とクラウド履歴から対象日が消える。
+- 同日付の legacy localStorage data が存在しても、再読込時に削除済みデータが復活しない。
 
 ### CRUD-04 Date isolation
 
@@ -109,6 +144,18 @@ Expected:
 
 - 日付間で入力内容が混ざらない。
 - 各日付に対応する内容だけが表示される。
+
+### CRUD-05 Cloud history
+
+1. 複数日の記録を Supabase に保存する。
+2. 「表示・保存」から「保存・読出」を開く。
+3. 別 browser または smartphone でも同じユーザーで履歴を開く。
+
+Expected:
+
+- 両方の画面に Supabase の同じ日付一覧が降順で表示される。
+- 最終保存時刻は aggregate の `daily_record.updated_at` に対応する。
+- localStorage にしかない日付は履歴へ混入しない。
 
 ## 3. Multi-device
 
@@ -134,7 +181,7 @@ Expected:
 
 Expected:
 
-- User A の `record_json` が User B の UI / API response に現れない。
+- User A の記録が User B の UI / API response に現れない。
 
 ### RLS-02 Other user's data is not writable
 
@@ -144,20 +191,51 @@ Expected:
 
 - User A の行を変更・削除できない。
 
+### RLS-03 アプリの永続化経路と所有者分離
+
+schemaやRLSの変更後に、対象環境の書込モードでCRUDと所有者分離を確認する。
+
+1. 既存の受入テストユーザーでログインし、browser DevToolsのNetwork tabでログを保持する。
+2. 既存データと重ならないテスト専用日付を選び、体重・体調・食事・運動に識別可能な値を入力して保存する。
+3. reloadして同日付を開き、入力値とクラウド履歴を確認する。
+4. 一部を変更して再保存し、もう一度reloadして更新値を確認する。
+5. Network tabを `/rest/v1/` で絞り込み、DailyRecordのrequest先を確認する。
+6. テスト日付を削除し、reload後に画面と履歴から消えることを確認する。
+
+Expected:
+
+- create / reload / update / history / deleteが従来どおり成功する。
+- 読込・履歴が `daily_record` を起点にし、保存・削除は対応するRPCを利用する。
+- 現行CRUDでpermission denied、401、403が発生しない。
+- テスト対象外の日付と他ユーザーの記録は変化しない。
+
 ## 5. Failure handling
 
 ### ERR-01 Supabase unavailable
 
-1. browser network を offline にする、または開発環境で Supabase 通信を失敗させる。
-2. DailyRecord を保存する。
+1. online でテスト日付のクラウド記録を読み込む。
+2. 値を変更して「未保存」を表示させる。
+3. browser network を offline にする、または開発環境で Supabase save を失敗させる。
+4. DailyRecord を保存する。
 
 Expected:
 
 - アプリ全体が crash しない。
-- localStorage 側の保存結果を確認できる。
-- Supabase failure が少なくとも console 上で検知可能。
+- クラウド保存失敗が画面に表示され、「保存しました」と表示されない。
+- 入力内容と「未保存」状態が維持される。
+- localStorage を代替保存先として書き換えない。
 
-### ERR-02 Recovery
+### ERR-02 Delete failure
+
+1. online でクラウド履歴を開く。
+2. Supabase delete が失敗する状態で対象日を削除する。
+
+Expected:
+
+- クラウド削除失敗が画面に表示される。
+- 対象日の画面データと履歴を削除済み扱いにしない。
+
+### ERR-03 Recovery
 
 1. ERR-01 後に network を復旧する。
 2. 同日付を再度保存・読込する。
@@ -165,9 +243,10 @@ Expected:
 Expected:
 
 - Supabase への保存が再び成功する。
-- reload 後の表示と Supabase `record_json` が整合する。
+- reload後の表示とSupabaseの正規化データが一致する。
 
 ## Completion
 
-主要シナリオを PASS したら、現在の baseline や次アクションへ影響する事項だけ `docs/current-state.md` に反映する。
-過去の実施記録をこの文書へ蓄積しない。
+system testの実行結果、PASS / FAIL、残課題、再開条件は対象GitHub Issueへ記録する。
+恒久的なtest caseや現行test方針が変わった場合だけ、この文書または `docs/testing.md` を更新する。
+過去の実施記録や次アクションをこの文書へ蓄積しない。

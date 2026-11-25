@@ -10,8 +10,9 @@
 ```text
 src/
   app/        application service / Supabase persistence
-  domain/     data contract, factory, normalizer, report, local storage
+  domain/     data contract, factory, normalizer, report
   features/   cross-cutting feature such as auth
+  legacy/     explicit read-only input for future migration
   lib/        external client setup
   ui/         DailyRecord input UI and editors
   App.tsx     application composition
@@ -25,8 +26,7 @@ main.tsx
   -> App.tsx
     -> AuthPanel
     -> DailyRecordForm
-      -> dailyRecordService
-        -> repository / localStorage
+      -> dailyRecordCloud
       -> dailyRecordSupabaseService
 ```
 
@@ -35,7 +35,7 @@ main.tsx
 ### Domain
 
 `src/domain/type.ts` の `DailyRecordAggregate` をアプリ内の1日分データ契約の基準とする。
-Domain layer は factory、normalization、report generation、local persistence などアプリ固有のルールを担う。
+Domain layer は factory、normalization、report generation などアプリ固有のルールを担う。
 
 ### Application
 
@@ -50,17 +50,33 @@ Supabase remote persistence は `src/app/dailyRecordSupabaseService.ts` が担�
 
 Auth は `src/features/auth/`、Supabase client 初期化は `src/lib/` が担当する。
 
+### Legacy input
+
+`src/legacy/localStorage/readLegacyDailyRecords.ts` は、将来の明示的な migration 処理が
+`daily_record:<ISODate>` を調査するための読み取り専用入口である。通常の application runtime
+から import せず、書込・削除・clear・正規化・クラウドへの自動昇格は行わない。
+Supabase Auth の session storage は別責務であり、この reader の対象にも変更対象にも含めない。
+
 ## Persistence routing
 
-保存先は development / production で切り替えない。主にログイン状態で分岐する。
+保存先は development / production で切り替えない。`DailyRecordForm` の永続化は
+ログイン済みユーザーの Supabase に限定する。
 
-- 未ログイン: localStorage のみ保存・読込
-- ログイン中の保存: localStorage 保存後、Supabase に remote 保存
-- ログイン中の読込: Supabase 優先、対象データが無い場合や取得できない場合は localStorage fallback
-- Supabase 保存失敗時も、先に完了した localStorage 保存は残る
+- Auth 確認中は DailyRecord の入力・永続化 UI を表示しない。
+- 未ログイン時はログインを要求し、保存・読込・履歴・削除を提供しない。
+- ログイン中の保存・読込・履歴・削除は `dailyRecordPersistence` がbuild設定に対応するSupabaseサービスへ委譲する。
+- read の `not_found` はその日付の新規レコード、`error` は読込失敗として扱う。
+- read error 時に localStorage を正式データとして自動採用しない。
+- save / delete の成功結果を受け取った後だけ、画面の保存済み状態・履歴を更新する。
 
-現行 remote persistence は `public.daily_record_store.record_json` へ `DailyRecordAggregate` 全体を JSONB 保存する方式。
-DB構成・安全条件は `docs/database.md` を参照する。
+クラウド保存前のaggregate正規化と認証ユーザー・対象日付の適用は `src/app/dailyRecordCloud.ts` が担当する。
+JSONB経路の保存時刻はアプリで付与し、正規化経路はDBが返したroot identityと時刻を画面に反映する。
+
+旧 localStorage repository / service / write storage は廃止済み。browser に存在する
+`daily_record:<ISODate>` は削除せず、明示的な legacy reader に渡した場合だけ読み取れる。
+この reader は `DailyRecordForm` を含む通常 runtime route から参照しない。
+
+本番で有効な経路は [現行環境](current-state.md)、各経路のDB構成と契約は [Database](database.md) を参照する。
 
 ## Design principles
 
@@ -74,7 +90,9 @@ DB構成・安全条件は `docs/database.md` を参照する。
 
 - Data contract: `src/domain/type.ts`
 - Current source: `src/`
+- Legacy migration input: `src/legacy/localStorage/readLegacyDailyRecords.ts`
 - DB DDL / RLS: `supabase/migrations/`
 - Database explanation: `docs/database.md`
 - Test policy: `docs/testing.md`
-- Current work state: `docs/current-state.md`
+- Current environment / operational facts: `docs/current-state.md`
+- Development plan / progress / handoff: GitHub Issues

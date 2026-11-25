@@ -6,6 +6,7 @@ import type {
   MealRecord,
   FoodItem,
 } from "../../domain/type";
+import { generateUUID } from "../../domain/generateUUID";
 
 type MealCategory = "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK";
 
@@ -15,16 +16,6 @@ const CATEGORIES: { key: MealCategory; label: string }[] = [
   { key: "DINNER", label: "夜" },
   { key: "SNACK", label: "間食" },
 ];
-
-function uuid(): string {
-  // Browser crypto.randomUUID優先、なければfallback
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const c: any = globalThis as any;
-  return (
-    c.crypto?.randomUUID?.() ??
-    `tmp_${Date.now()}_${Math.random().toString(16).slice(2)}`
-  );
-}
 
 function formatKcal(value: number): string {
   // 0000 形式にしたければ padStart(4, "0")
@@ -80,7 +71,7 @@ function createEmptyMealAggregate(params: {
   const t = nowIso();
 
   const meal_record: MealRecord = {
-    id: uuid(),
+    id: generateUUID(),
     daily_record_id: params.dailyRecordId,
     recording_category: params.category,
     meal_order: params.order,
@@ -104,7 +95,7 @@ function createEmptyFoodItem(params: {
   const t = nowIso();
 
   return {
-    id: uuid(),
+    id: generateUUID(),
     meal_record_id: params.mealRecordId,
     // もしFoodItemに food_item_order を追加済みならこれが効く
     food_item_order: params.order,
@@ -117,7 +108,7 @@ function createEmptyFoodItem(params: {
     food_carbohydrates: null,
     created_at: t,
     updated_at: t,
-  } as unknown as FoodItem; // ← order未定義の型でも一旦ビルド通しやすくする保険
+  };
 }
 
 export function MealEditor(props: {
@@ -497,10 +488,14 @@ export function MealEditor(props: {
                               type="number"
                               inputMode="decimal"
                               step="0.1"
-                              value={fi.food_amount === 0 ? "" : String(fi.food_amount)}
+                              value={
+                                fi.food_amount === null || fi.food_amount === 0
+                                  ? ""
+                                  : String(fi.food_amount)
+                              }
                               onChange={(e) =>
                                 updateFoodItem(m.meal_record.id, fi.id, {
-                                  food_amount: e.target.value === "" ? 0 : Number(e.target.value),
+                                  food_amount: e.target.value === "" ? null : Number(e.target.value),
                                 })
                               }
                               placeholder="食べた量(数字)"
@@ -520,10 +515,14 @@ export function MealEditor(props: {
                               type="number"
                               inputMode="numeric"
                               step="1"
-                              value={fi.food_calorie === 0 ? "" : String(fi.food_calorie)}
+                              value={
+                                fi.food_calorie === null || fi.food_calorie === 0
+                                  ? ""
+                                  : String(fi.food_calorie)
+                              }
                               onChange={(e) =>
                                 updateFoodItem(m.meal_record.id, fi.id, {
-                                  food_calorie: e.target.value === "" ? 0 : Number(e.target.value),
+                                  food_calorie: e.target.value === "" ? null : Number(e.target.value),
                                 })
                               }
                               placeholder="摂取カロリー(数字)"
