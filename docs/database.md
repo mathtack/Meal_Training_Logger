@@ -92,7 +92,7 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 `20261105220611_narrow_jsonb_runtime_access.sql` はlive適用済み。既存JSONB経路のownership policyをauthenticatedに限定し、`app_user` のSELECT / INSERT / UPDATEと `daily_record_store` のCRUDをauthenticatedへgrantする。
 
-`20261106033054_atomic_cutover_mirror.sql` はDBの書込モードとmirror対応RPCを追加する。本番への適用状況は [現行環境](current-state.md) を参照する。保存と削除は正規化データとJSONB mirrorを同一transactionで更新する。mirrorは保存済みの正規化データから導出し、運動時刻はJSTのoffset付きで格納する。書込モードと復旧手順は [切替runbook](cutover.md) を参照する。
+`20261106033054_atomic_cutover_mirror.sql` はDBの書込モードとmirror対応RPCを追加する。退役migrationの適用前は保存と削除が正規化データとJSONB mirrorを同一transactionで更新する。mirrorは保存済みの正規化データから導出し、運動時刻はJSTのoffset付きで格納する。切替中の書込モードは [切替runbook](cutover.md) を参照する。
 
 `20261125212008_retire_jsonb_runtime.sql` はmirror更新とブラウザの旧JSONB権限を退役するforward migration。正規化RPCの入口と凍結機能を維持し、JSONB行の処分は移行照合後の操作として扱う。このmigrationまで適用する空の新規DBはnormalizedモードで開始する。既存のJSONB-only DBは正規化への切替を完了してから適用する。本番の状態は [現行環境](current-state.md)、退役条件は [切替runbook](cutover.md) を参照する。
 

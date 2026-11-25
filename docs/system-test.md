@@ -11,15 +11,13 @@
 
 ## Preconditions
 
-- `.env.local` に `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が設定されている。
-- Supabase の `app_user` / `daily_record_store` が利用可能。
-- `daily_record_store` は RLS 有効で、ログインユーザー自身の `user_id` の行だけ操作可能。
+- ローカルで実行する場合、`.env.local` に `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_DAILY_RECORD_PERSISTENCE=normalized` が設定されている。
+- Supabase の正規化テーブル、所有者RLS、保存・削除RPCが利用可能。
 - Auth と `app_user` に登録済みで、現在ログイン可能な受入テスト用メールアドレスを利用できる。
 - PC browser と smartphone browser、または独立した2ブラウザを利用できる。
 - RLS 確認用に必要であれば2ユーザーを用意する。
 
-保存先は development / production で切り替わらない。DailyRecord の永続化操作はログイン必須で、
-ログイン中の正式経路は Supabase JSONB のみ。既存 localStorage data は削除しないが、画面は自動 fallback しない。
+DailyRecordの永続化操作にはログインが必要。正規化テーブルを保存先とする。旧localStorageデータの扱いは [現行環境](current-state.md) を参照する。
 Supabase client は起動時に初期化されるため、未ログイン表示の確認時も環境変数は必要。
 
 ## 0. Persistence routing
@@ -28,13 +26,13 @@ Supabase client は起動時に初期化されるため、未ログイン表示�
 
 1. logout して未ログイン状態にする。
 2. DailyRecord 領域を確認する。
-3. Network tab で `daily_record_store` request が発生していないことを確認する。
+3. Network tab で DailyRecordのテーブル・RPCへのrequestが発生していないことを確認する。
 
 Expected:
 
 - ログインが必要という案内が表示される。
 - DailyRecord の入力・保存・履歴・削除 UI は表示されない。
-- Supabase `daily_record_store` と `daily_record:*` localStorage のどちらも読み書きしない。
+- DailyRecordのクラウド保存先と `daily_record:*` localStorageへの読み書きは発生しない。
 
 ### ROUTE-02 Read error does not fall back to localStorage
 
@@ -108,13 +106,13 @@ Expected:
 1. 体重・体調・食事・運動を識別しやすい値で入力する。
 2. 保存する。
 3. 別日へ移動してから元の日付へ戻る、または reload する。
-4. Supabase `daily_record_store` を確認する。
+4. Supabaseの `daily_record` と対応する子テーブルを確認する。
 
 Expected:
 
 - 入力内容が復元される。
 - `user_id + record_date` に対応する行が1件存在する。
-- `record_json` が画面の DailyRecordAggregate と論理的に一致する。
+- 正規化テーブルから復元した DailyRecordAggregate が画面の記録と一致する。
 
 ### CRUD-02 Update
 
@@ -134,7 +132,7 @@ Expected:
 
 Expected:
 
-- Supabase `daily_record_store` から対象行が消える。
+- Supabaseの `daily_record` から対象行が消え、対応する子レコードも削除される。
 - 削除成功後に画面とクラウド履歴から対象日が消える。
 - 同日付の legacy localStorage data が存在しても、再読込時に削除済みデータが復活しない。
 
@@ -183,7 +181,7 @@ Expected:
 
 Expected:
 
-- User A の `record_json` が User B の UI / API response に現れない。
+- User A の記録が User B の UI / API response に現れない。
 
 ### RLS-02 Other user's data is not writable
 
@@ -207,7 +205,7 @@ schemaやRLSの変更後に、対象環境の書込モードでCRUDと所有者�
 Expected:
 
 - create / reload / update / history / deleteが従来どおり成功する。
-- 正規化モードでは読込・履歴が `daily_record` を起点にし、保存・削除は対応するRPCを利用する。JSONBモードの復旧検証では `daily_record_store` を利用する。
+- 読込・履歴が `daily_record` を起点にし、保存・削除は対応するRPCを利用する。
 - 現行CRUDでpermission denied、401、403が発生しない。
 - テスト対象外の日付と他ユーザーの記録は変化しない。
 
@@ -245,7 +243,7 @@ Expected:
 Expected:
 
 - Supabase への保存が再び成功する。
-- reload 後の表示と Supabase `record_json` が整合する。
+- reload後の表示とSupabaseの正規化データが一致する。
 
 ## Completion
 

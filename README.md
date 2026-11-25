@@ -67,6 +67,7 @@ Required variables:
 ```text
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
+VITE_DAILY_RECORD_PERSISTENCE=normalized
 ```
 
 Start development server:
