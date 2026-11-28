@@ -1,6 +1,12 @@
 # 本番運用
 
-現在の環境と有効な保存経路は [現行環境](../docs/current-state.md)、DB の契約は [Database](../docs/database.md)、ブラウザでの受入は [システムテスト](../docs/system-test.md) を参照する。
+DB の契約は [Database](../docs/database.md)、ブラウザでの受入は [システムテスト](../docs/system-test.md) を参照する。
+
+## 本番の稼働構成
+
+- Vercel 本番は正規化版を使用する。旧世代の再ビルドは [切り戻し手順](#アプリ切り戻しと-db-異常) を参照する。
+- 本番 Supabase は退役 migration `20261125212008` を適用済みで、DB 書込モードは `normalized`。旧 JSONB の自動更新とブラウザ向け権限は退役し、`public.daily_record_store` は空の旧テーブル。
+- 既存本番 DB では `20260902090014` の baseline は履歴だけを接続し、`20260907121742` の deny-by-default migration を適用済み。baseline SQL は既存本番で実行していない。
 
 ## 承認と実行前の確認
 

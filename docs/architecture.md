@@ -77,7 +77,7 @@ Supabase Auth の session storage は別責務であり、この reader の対�
 `daily_record:<ISODate>` は削除せず、明示的な legacy reader に渡した場合だけ読み取れる。
 この reader は `DailyRecordForm` を含む通常 runtime route から参照しない。
 
-本番で有効な経路は [現行環境](current-state.md)、DB 構成と契約は [Database](database.md) を参照する。
+本番で有効な経路は [本番の稼働構成](../00_docs/product_operations.md#本番の稼働構成)、DB 構成と契約は [Database](database.md) を参照する。
 
 ## Design principles
 
@@ -95,5 +95,5 @@ Supabase Auth の session storage は別責務であり、この reader の対�
 - DB DDL / RLS: `supabase/migrations/`
 - Database explanation: `docs/database.md`
 - Test policy: `docs/testing.md`
-- Current environment / operational facts: `docs/current-state.md`
+- Production operation: [本番運用](../00_docs/product_operations.md)
 - Development plan / progress / handoff: GitHub Issues

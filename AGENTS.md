@@ -3,7 +3,7 @@
 ## 作業開始・再開
 
 1. [README](README.md) でリポジトリの入口を確認する。
-2. [現行環境](docs/current-state.md) で品質 baseline と安全制約を確認する。
+2. [品質ゲート](docs/testing.md#quality-gate) と [運用の安全条件](00_docs/product_operations.md#承認と実行前の確認) を確認する。
 3. 対象の GitHub Issue と、その親 Issue の Scope・着手条件・checkpoint・STOP GATE を確認する。
 4. [開発標準](00_docs/development_standard.md) の該当箇所と、Issue が参照する仕様・実装・テストを読む。機能から探す場合は [機能索引](00_docs/function_catalog.md) を使う。
 

@@ -1,4 +1,3 @@
-﻿// src/ui/DailyRecordForm.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type {
   DailyRecordAggregate,

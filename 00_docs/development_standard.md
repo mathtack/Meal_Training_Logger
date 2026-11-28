@@ -1,6 +1,6 @@
 # 開発標準
 
-Issue は要求・承認・進捗と再開点、Git は成果物と変更履歴の正本。現行機能は [機能索引](function_catalog.md)、本番操作は [本番運用](product_operations.md)、環境と品質 baseline は [現行環境](../docs/current-state.md) を参照する。
+Issue は要求・承認・進捗と再開点、Git は成果物と変更履歴の正本。現行機能は [機能索引](function_catalog.md)、本番操作は [本番運用](product_operations.md)、品質の基準は [テスト方針](../docs/testing.md#quality-gate) を参照する。
 
 ## Repository / documentation rules
 
@@ -174,8 +174,7 @@ YES -> README / AGENTS / docs/*.md等の適切なSSOT
 NO  -> GitHub Issue / Git history
 ```
 
-[現行環境](../docs/current-state.md) は進捗、Current goal、Next action、Backlog、過去checkpointを持たない。
-現在も有効な環境、品質baseline、安全制約、作業開始時に必要なSSOT案内だけを保持する。
+開発の進捗・次工程・Backlog・checkpoint は GitHub Issue に記録する。
 
 ## Hard-coding / external source policy
 
@@ -188,29 +187,14 @@ NO  -> GitHub Issue / Git history
 
 ### 作業環境の再現
 
-- 作業開始時に対象リポジトリ、ブランチ、起点 commit、Git・Node.js・npm のバージョンを確認する。Node.js は依存パッケージの要件と [現行環境](../docs/current-state.md) を確認する。
+- 作業開始時に対象リポジトリ、ブランチ、起点 commit、Git・Node.js・npm のバージョンを確認する。ローカル検証では依存パッケージの要件と、Vercel の設定に合わせた Node.js 24.x を基準にする。ASTRAEA はリモート開発ホストの一つ。Codex CLI は設定診断や Skill の補助に利用できる。
 - 対象ツリーが clean であることを確認し、`git fetch origin`、対象ブランチへの切替と `git pull --ff-only` で最新の起点と照合する。新規ブランチは Issue で確定した起点から作成する。
 - `npm ci` で lockfile の依存を導入する。実行時に必要な値の名前は [環境設定例](../.env.example) に従い、ローカルの実値は `.env.local` に置く。検証のために本番資格情報やユーザーデータを引き継ぐ必要がある場合は、対象と権限を [本番運用](product_operations.md) で確認する。
 - ローカル・リモートとも同じコマンド、時刻条件、baseline で検証する。作業開始時に既知の状態を照合し、差がある場合は環境、バージョン、実行コマンドと実測値を Issue に記録する。
 
 ### 変更後の品質ゲート
 
-意味のあるsource変更では以下を実行する。
-
-```powershell
-npm run build
-$env:TZ = "Asia/Tokyo"
-npm test -- --run
-npm run deps:circular
-npm run lint
-```
-
-最低gate:
-
-- build: PASS
-- tests: PASS
-- circular dependency: 0
-- lint error count: [現行環境](../docs/current-state.md) のbaselineから増やさない
+意味のある source 変更では、[テスト方針の品質ゲート](../docs/testing.md#quality-gate) を実行する。
 
 Documentation-only changeではapplication behaviorの再検証は必須としないが、path / link / Issue reference / SSOT / YAML syntaxの整合を確認する。
 

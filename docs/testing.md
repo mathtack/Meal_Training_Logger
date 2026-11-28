@@ -68,7 +68,9 @@ npm run lint
 - build を壊さない
 - tests を壊さない
 - circular dependency を発生させない
-- lint error を `docs/current-state.md` の baseline から増やさない
+- lint error 0件
+
+現在の基準は build・JST 全テスト合格、17ファイル／115テスト、循環依存0件、lint 0件。固定 offset の出力を比較するテストはタイムゾーンに依存するため、Windows を含めてテスト前に `TZ=Asia/Tokyo` を指定する。
 
 ## Manual system test
 
@@ -87,6 +89,5 @@ Supabase Auth / CRUD / RLS / multi-device など、browser と実環境を必要
 - test case を version 別 folder に複製しない。
 - 自動テストは対応する実装のそばに置く。
 - 手動 E2E / system test の SSOT は `docs/system-test.md`。
-- 現在有効な品質 baseline と環境固有の実行制約は `docs/current-state.md` に置く。
 - task固有の検証結果・FAIL・再開条件はGitHub Issueへ記録し、この文書へ進捗として蓄積しない。
 - 完了済み・廃止済み test plan は Git history に任せる。

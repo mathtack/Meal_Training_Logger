@@ -13,7 +13,7 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 
 アプリの1日分データ契約は `20_module/00_common/src/domain/type.ts` の `DailyRecordAggregate` を基準とする。
 
-環境ごとの接続先と稼働中の保存経路は [現行環境](current-state.md) を参照する。
+環境ごとの接続先と稼働中の保存経路は [本番の稼働構成](../00_docs/product_operations.md#本番の稼働構成) を参照する。
 
 - 未ログイン: DailyRecord の永続化操作にはログインが必要。
 - ログイン中: 保存・読込・履歴・削除は Supabase のみを正式経路とする。
@@ -48,7 +48,7 @@ Supabase client は development / production を問わず初期化されるた�
 - `record_json`: jsonb
 - `saved_at`: timestamptz
 
-`user_id + record_date` はuniqueで、移行前は1ユーザー・1日につき1件のaggregateを保持した。移行済みの本番状態は [現行環境](current-state.md) を参照する。
+`user_id + record_date` はuniqueで、移行前は1ユーザー・1日につき1件のaggregateを保持した。移行済みの本番状態は [本番の稼働構成](../00_docs/product_operations.md#本番の稼働構成) を参照する。
 
 ### `public.app_user`
 
@@ -94,7 +94,7 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 `20261106033054_atomic_cutover_mirror.sql` はDBの書込モードとmirror対応RPCを追加する。退役migrationの適用前は保存と削除が正規化データとJSONB mirrorを同一transactionで更新する。mirrorは保存済みの正規化データから導出し、運動時刻はJSTのoffset付きで格納する。過去の JSONB 切替手順が必要な場合は、[切替時点の Git 履歴](https://github.com/mathtack/Meal_Training_Logger/blob/bd48af7a7da3a80067451d3ccdf387f2cd00dfa9/docs/cutover.md) を参照する。
 
-`20261125212008_retire_jsonb_runtime.sql` はmirror更新とブラウザの旧JSONB権限を退役するforward migration。正規化RPCの入口と凍結機能を維持し、JSONB行の処分は移行照合後の操作として扱う。このmigrationまで適用する空の新規DBはnormalizedモードで開始する。既存のJSONB-only DBは正規化への切替を完了してから適用する。本番の状態は [現行環境](current-state.md)、現在の凍結・復旧手順は [本番運用](../00_docs/product_operations.md) を参照する。
+`20261125212008_retire_jsonb_runtime.sql` はmirror更新とブラウザの旧JSONB権限を退役するforward migration。正規化RPCの入口と凍結機能を維持し、JSONB行の処分は移行照合後の操作として扱う。このmigrationまで適用する空の新規DBはnormalizedモードで開始する。既存のJSONB-only DBは正規化への切替を完了してから適用する。本番の状態は [本番の稼働構成](../00_docs/product_operations.md#本番の稼働構成)、現在の凍結・復旧手順は [本番運用](../00_docs/product_operations.md) を参照する。
 
 ## Baseline differences from live
 
