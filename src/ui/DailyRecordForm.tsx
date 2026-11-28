@@ -5,8 +5,8 @@ import type {
   DailyRecordSummary,
   ISODate,
 } from "../../20_module/00_common/src/domain/type";
-import { createEmptyCloudDailyRecord } from "../app/dailyRecordCloud";
-import { dailyRecordPersistence as persistence } from "../app/dailyRecordPersistence";
+import { createEmptyCloudDailyRecord } from "../../20_module/S-02_daily-record-persistence/src/dailyRecordCloud";
+import { dailyRecordPersistence as persistence } from "../../20_module/S-02_daily-record-persistence/src/dailyRecordPersistence";
 import { ExerciseSessionsEditor } from "./exercise/ExerciseSessionsEditor";
 import { WeightEditor } from "./weights/WeightEditor";
 import { WellnessEditor } from "./wellness/WellnessEditor";

@@ -1,4 +1,4 @@
-import type { DailyRecordAggregate, ISODate } from "../../20_module/00_common/src/domain/type";
+import type { DailyRecordAggregate, ISODate } from "../../00_common/src/domain/type";
 import { normalizeCloudDailyRecord } from "./dailyRecordCloud";
 import {
   deleteDailyRecordNormalized, fetchDailyRecordHistoryNormalized, fetchDailyRecordNormalized,

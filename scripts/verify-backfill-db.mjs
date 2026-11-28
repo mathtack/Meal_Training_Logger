@@ -11,7 +11,7 @@ const server = await createServer({ configFile: false, server: { middlewareMode:
 const db = new PGlite();
 try {
   const { backfillChecksums, tableNames } = await server.ssrLoadModule("/src/legacy/localStorage/backfillPlan.ts");
-  const { mapNormalizedDailyRecord } = await server.ssrLoadModule("/src/app/dailyRecordNormalizedReadMapper.ts");
+  const { mapNormalizedDailyRecord } = await server.ssrLoadModule("/20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper.ts");
   const owner = normalizedUserId;
   const foreign = "20000000-0000-4000-8000-000000000001";
   const aggregate = mapNormalizedDailyRecord(normalizedRecordFixture(), { userId: owner, date: normalizedDate });

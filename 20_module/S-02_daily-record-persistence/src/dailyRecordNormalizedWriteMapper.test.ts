@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DailyRecordAggregate, ISODate, UUID } from "../../20_module/00_common/src/domain/type";
+import type { DailyRecordAggregate, ISODate, UUID } from "../../00_common/src/domain/type";
 import { mapDailyRecordToNormalizedSavePayload } from "./dailyRecordNormalizedWriteMapper";
 
 const USER_ID = "00000000-0000-4000-8000-000000000001" as UUID;

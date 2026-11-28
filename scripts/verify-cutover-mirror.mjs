@@ -9,7 +9,7 @@ const { PGlite } = await import(pathToFileURL(resolve(process.argv[2])).href);
 const server = await createServer({ configFile: false, server: { middlewareMode: true, ws: false }, appType: "custom" });
 const db = new PGlite();
 try {
-  const { mapNormalizedDailyRecord } = await server.ssrLoadModule("/src/app/dailyRecordNormalizedReadMapper.ts");
+  const { mapNormalizedDailyRecord } = await server.ssrLoadModule("/20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper.ts");
   const { backfillChecksums } = await server.ssrLoadModule("/src/legacy/localStorage/backfillPlan.ts");
   const owner = normalizedUserId, date = normalizedDate;
   const other = "20000000-0000-4000-8000-000000000001";

@@ -1,9 +1,9 @@
-import { createEmptyDailyRecordAggregate } from "../../20_module/00_common/src/domain/factories/createEmptyDailyRecordAggregate";
-import { normalizeDailyRecordAggregate } from "../../20_module/00_common/src/domain/normalizers/normalizeDailyRecordAggregate";
+import { createEmptyDailyRecordAggregate } from "../../00_common/src/domain/factories/createEmptyDailyRecordAggregate";
+import { normalizeDailyRecordAggregate } from "../../00_common/src/domain/normalizers/normalizeDailyRecordAggregate";
 import type {
   DailyRecordAggregate,
   ISODate,
-} from "../../20_module/00_common/src/domain/type";
+} from "../../00_common/src/domain/type";
 
 type CloudRecordIdentity = {
   userId: string;

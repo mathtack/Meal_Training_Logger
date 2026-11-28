@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   normalizedRecordFixture, normalizedUserId, normalizedDate, normalizedTime, fixtureId,
-} from "../../20_module/00_common/testing/normalizedRecordFixture";
+} from "../../00_common/testing/normalizedRecordFixture";
 
 const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }));
-vi.mock("../../20_module/00_common/src/lib/supabaseClient", async () => {
+vi.mock("../../00_common/src/lib/supabaseClient", async () => {
   const { createClient } = await import("@supabase/supabase-js");
   return {
     supabase: createClient("https://normalized.invalid", "test-anon-key", {

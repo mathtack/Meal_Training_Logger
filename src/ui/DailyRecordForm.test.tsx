@@ -16,13 +16,13 @@ vi.mock("../../20_module/S-01_auth/src/AuthContext", () => ({
   useAuth: mocks.useAuth,
 }));
 
-vi.mock("../app/dailyRecordNormalizedQueryService", () => ({
+vi.mock("../../20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedQueryService", () => ({
   fetchDailyRecordNormalized: mocks.fetchRecord,
   fetchDailyRecordHistoryNormalized: mocks.fetchHistory,
   deleteDailyRecordNormalized: mocks.deleteRecord,
 }));
 
-vi.mock("../app/dailyRecordNormalizedWriteService", () => ({
+vi.mock("../../20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedWriteService", () => ({
   saveDailyRecordNormalized: mocks.saveRecord,
 }));
 

@@ -3,7 +3,7 @@ import { mapNormalizedDailyRecord } from "./dailyRecordNormalizedReadMapper";
 import { mapDailyRecordToNormalizedSavePayload } from "./dailyRecordNormalizedWriteMapper";
 import {
   normalizedRecordFixture, normalizedUserId, normalizedDate,
-} from "../../20_module/00_common/testing/normalizedRecordFixture";
+} from "../../00_common/testing/normalizedRecordFixture";
 
 const expected = { userId: normalizedUserId, date: normalizedDate };
 

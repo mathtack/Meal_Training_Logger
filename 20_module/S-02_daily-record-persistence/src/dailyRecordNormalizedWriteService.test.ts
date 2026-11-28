@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { DailyRecordAggregate, ISODate, UUID } from "../../20_module/00_common/src/domain/type";
+import type { DailyRecordAggregate, ISODate, UUID } from "../../00_common/src/domain/type";
 
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
-vi.mock("../../20_module/00_common/src/lib/supabaseClient", () => ({
+vi.mock("../../00_common/src/lib/supabaseClient", () => ({
   supabase: { rpc: rpcMock },
 }));
 

@@ -29,7 +29,7 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 現行 application runtime はこの reader を import しない。Supabase Auth が session 維持に利用する
 storage は別責務であり、この変更では Auth 設定・session data の読み書き・ログイン挙動を変更しない。
 
-Supabase への保存・読出・履歴・削除は `src/app/dailyRecordPersistence.ts` が正規化サービスへ委譲する。
+Supabase への保存・読出・履歴・削除は `20_module/S-02_daily-record-persistence/src/dailyRecordPersistence.ts` が正規化サービスへ委譲する。
 
 Supabase persistence service は save / read / delete の成功・not-found・errorを
 呼び出し側が区別できる result contract と、record date降順のremote history APIを持つ。
@@ -78,9 +78,9 @@ RLS は有効で、ユーザー本人の行のみ操作可能とする。
 
 `20260911091026_normalized_atomic_write_rpc.sql` はauthenticated ownership RLSと明示grant、`save_daily_record_normalized(jsonb)` を定義する。RPCは `SECURITY INVOKER`、空の `search_path`、authenticated限定EXECUTEとし、最初の保存で `app_user` を冪等作成する。同じuser/dateのrootをlockし、root ID / created_atを維持して全childをtransaction内で置換する。root updated_atはDB transaction時刻とする。schema contractとRPCの両migrationはlive適用済み。
 
-- `src/app/dailyRecordNormalizedWriteMapper.ts` / `dailyRecordNormalizedWriteService.ts`: aggregateの検証・order正規化と保存RPC呼出。
-- `src/app/dailyRecordNormalizedQueryService.ts`: root起点のrelational read、root列だけのhistory、atomic delete RPC。親子関係はmigrationのcomposite FK名を指定する。
-- `src/app/dailyRecordNormalizedReadMapper.ts`: DB responseからaggregateへ復元。全childのowner / parent ID、型、必須field、TEXT / SETSを検証し、不正な応答をpartial recordとして返さない。wellnessはnull / 0行をnull、1行をobjectとして復元し、複数行を拒否する。
+- `20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedWriteMapper.ts` / `dailyRecordNormalizedWriteService.ts`: aggregateの検証・order正規化と保存RPC呼出。
+- `20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedQueryService.ts`: root起点のrelational read、root列だけのhistory、atomic delete RPC。親子関係はmigrationのcomposite FK名を指定する。
+- `20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper.ts`: DB responseからaggregateへ復元。全childのowner / parent ID、型、必須field、TEXT / SETSを検証し、不正な応答をpartial recordとして返さない。wellnessはnull / 0行をnull、1行をobjectとして復元し、複数行を拒否する。
 
 読込は各階層の保存済みorderでsortし、order値、ID、timestamp、foodのnullを保持する。DB専用child user_idとrelation fieldをdomain objectへ持ち込まない。historyは `record_date` 降順のkeyset paginationを使い、空pageまで取得する。途中の失敗時にpartial historyを成功扱いにしない。
 
@@ -109,7 +109,7 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 優先順位:
 
 1. アプリのデータ契約: `20_module/00_common/src/domain/type.ts`
-2. 永続化サービスの入口: `src/app/dailyRecordPersistence.ts`
+2. 永続化サービスの入口: `20_module/S-02_daily-record-persistence/src/dailyRecordPersistence.ts`
 3. Supabase schema / RLS: `supabase/migrations/`
 
 `src/legacy/localStorage/readLegacyDailyRecords.ts` は migration input の読取境界であり、

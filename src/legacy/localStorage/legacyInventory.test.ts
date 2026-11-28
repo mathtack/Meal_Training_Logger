@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { mapNormalizedDailyRecord } from "../../app/dailyRecordNormalizedReadMapper";
+import { mapNormalizedDailyRecord } from "../../../20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper";
 import { normalizedRecordFixture, normalizedUserId, normalizedDate } from "../../../20_module/00_common/testing/normalizedRecordFixture";
 import { canonicalJSON, captureLegacyInventory, compareLegacyInventory, inventoryDigest, type InventoryCloudSnapshot } from "./legacyInventory";
 

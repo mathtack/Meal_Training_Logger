@@ -4,7 +4,7 @@ import type {
   ISODate,
   ISODateTime,
   UUID,
-} from "../../20_module/00_common/src/domain/type";
+} from "../../00_common/src/domain/type";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

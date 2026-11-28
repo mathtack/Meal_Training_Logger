@@ -50,7 +50,7 @@ const server = await createServer({
   appType: "custom",
 });
 try {
-  const { mapNormalizedDailyRecord } = await server.ssrLoadModule("/src/app/dailyRecordNormalizedReadMapper.ts");
+  const { mapNormalizedDailyRecord } = await server.ssrLoadModule("/20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper.ts");
   const raw = normalizedRecordFixture();
   const record = mapNormalizedDailyRecord(raw, { userId: owner, date });
   // Give the second synthetic tenant a distinct set of primary and foreign keys.

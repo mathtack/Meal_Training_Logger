@@ -9,7 +9,6 @@
 
 ```text
 src/
-  app/        application service / Supabase persistence
   legacy/     explicit read-only input for future migration
   ui/         DailyRecord input UI and editors
   App.tsx     application composition
@@ -18,6 +17,7 @@ src/
   00_common/   shared data contract, helpers, client and test fixtures
   C-06_report/  report specification, implementation and tests
   S-01_auth/    authentication specification and implementation
+  S-02_daily-record-persistence/  normalized persistence and its tests
 ```
 
 主要フロー:
@@ -41,8 +41,7 @@ Domain layer は factory、normalization などアプリ固有のルールを担
 
 ### Application
 
-`src/app/` は use case と外部 persistence の呼出境界を担う。
-Supabase の正規化永続化の入口は `src/app/dailyRecordPersistence.ts`。
+[S-02](../20_module/S-02_daily-record-persistence/spec.md) は日次記録の use case と正規化 Supabase の呼出境界を担う。
 
 ### UI
 
@@ -71,7 +70,7 @@ Supabase Auth の session storage は別責務であり、この reader の対�
 - read error 時に localStorage を正式データとして自動採用しない。
 - save / delete の成功結果を受け取った後だけ、画面の保存済み状態・履歴を更新する。
 
-クラウド保存前のaggregate正規化と認証ユーザー・対象日付の適用は `src/app/dailyRecordCloud.ts` が担当する。
+クラウド保存前のaggregate正規化と認証ユーザー・対象日付の適用は `20_module/S-02_daily-record-persistence/src/dailyRecordCloud.ts` が担当する。
 保存成功時は DB が返した root identity と時刻を画面に反映する。
 
 旧 localStorage repository / service / write storage は廃止済み。browser に存在する
