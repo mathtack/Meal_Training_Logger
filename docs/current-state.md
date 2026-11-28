@@ -1,6 +1,6 @@
 # Current State
 
-更新日: 2026-11-06
+更新日: 2026-11-28
 
 ## Purpose
 
@@ -11,17 +11,10 @@
 
 ## Development environment
 
-- Repository default branchは `master`。
-- `master` を直接編集しない。
-- 開発計画・進捗・handoffは GitHub Issues をSSOTとする。
-- Parent / Epicがある場合はParent Issue単位のbranchを統合branchとする。
-- Parentを持たない単独Issueは `codex/issue-<number>-<slug>` branchを使用する。
-- ASTRAEAはremote development hostとして利用できる。
-- Codex CLIはdoctor・設定診断・Skill / 自動化などの補助用途に利用できる。
-- 作業PCやchat sessionに依存せず、Repository + GitHub Issuesから再開できる状態を維持する。
-
-作業開始時は、対象Issueとbase / working branchを明示してから変更する。
-working treeがdirty、fast-forward不可、base branchが曖昧な場合は変更開始前に停止する。
+- GitHub の既定ブランチは `master`。作業ブランチと開始手順は [開発標準](../00_docs/development_standard.md) を参照する。
+- ASTRAEA は利用可能なリモート開発ホストの一つ。
+- Codex CLI は設定診断や Skill などの補助用途に利用できる。
+- Vercel プロジェクトの Node.js 設定は 24.x。ローカル検証でも同じメジャーバージョンを利用できる。
 
 ## Quality baseline
 
@@ -62,43 +55,7 @@ working treeがdirty、fast-forward不可、base branchが曖昧な場合は変�
 
 ## Supabase safety constraints
 
-- live Supabase schema / RLS / Auth settings / production-like dataを明示指示なしに変更・削除しない。
-- schema変更はGit-managed migrationを正とする。
-- `supabase/migrations/20260902090014_current_app_baseline.sql` は空の新規DB用。
-- **既存本番DBにbaseline migrationを実行しない。**
-- 既存live DBのmigration historyには `20260902090014` をschema適用済みとして履歴だけ接続し、`20260907121742` のdeny-by-default migrationを適用済み。baseline SQL自体はliveで実行していない。
-- 本番の書込モードや公開するアプリの保存経路を変更する場合は `docs/cutover.md` に従う。
+- 既存本番 DB の migration history には `20260902090014` を履歴だけ接続し、`20260907121742` の deny-by-default migration を適用済み。空の新規 DB 用の baseline SQL 自体は既存本番 DB で実行していない。
+- 本番の配信、Supabase の変更、書込モードの変更、切り戻しは [本番運用](../00_docs/product_operations.md) の承認・安全条件に従う。
 
-## SSOT map
-
-- Repository入口 / SSOT案内: `README.md`
-- Agent / Codex恒久運用ルール: `AGENTS.md`
-- 開発計画 / Backlog / 進捗 / STOP GATE / handoff: GitHub Issues
-- Architecture: `docs/architecture.md`
-- Database / persistence: `docs/database.md`
-- Test policy: `docs/testing.md`
-- Manual system test: `docs/system-test.md`
-- Data contract: `src/domain/type.ts`
-- Application source: `src/`
-- DB DDL / RLS: `supabase/migrations/`
-- 再利用可能なAgent手順: `skills/`
-- 過去状態 / 変更履歴: Git history
-
-## Startup checks
-
-既存環境で作業を再開する場合:
-
-```powershell
-git status
-git fetch origin
-git switch <issue-or-parent-branch>
-git pull --ff-only
-
-npm run build
-$env:TZ = "Asia/Tokyo"
-npm test -- --run
-npm run deps:circular
-npm run lint
-```
-
-対象branchとGitHub Issueのcheckpointが一致していることを確認してから変更を開始する。
+作業の参照先一覧は [README](../README.md) を参照する。

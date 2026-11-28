@@ -17,7 +17,7 @@ skills/
 
 - 1 Skill は1つの再利用可能な作業責務に限定する。
 - Skill の入口は原則 `SKILL.md` とする。
-- product / architecture / database / testing の通常仕様は `docs/` を正とし、Skill 内へ複製しない。
+- product / architecture / database / testing の通常仕様は [README の参照先](../README.md#現行仕様と作業の入口) を正とし、Skill 内へ複製しない。
 - Skill は必要な Repository SSOT を参照する。
 - task 固有の一時手順や単発メモを Skill 化しない。
 - secret、user data、環境固有 credential を含めない。

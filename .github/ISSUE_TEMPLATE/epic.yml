@@ -7,6 +7,7 @@ body:
       value: |
         Parent Issueは全体計画と再開点のSSOTです。
         詳細な実装ログはChild Issueへ残し、ここには最新の集約状態を維持してください。
+        起票済みの実行IssueはGitHubのサブIssueにも追加してください。
 
   - type: textarea
     id: goal
