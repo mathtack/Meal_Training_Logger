@@ -15,7 +15,7 @@ const outsideRepository = path => {
 if (command === "browser-bundle" && args.length === 1) {
   const file = outsideRepository(args[0]);
   await build({ root, configFile: false, publicDir: false, build: { write: true, emptyOutDir: false,
-    outDir: dirname(file), lib: { entry: resolve(root, "src/legacy/localStorage/legacyInventory.ts"), name: "LegacyInventory", formats: ["iife"], fileName: () => file.slice(dirname(file).length + 1) },
+    outDir: dirname(file), lib: { entry: resolve(root, "20_module/00_common/src/legacy/localStorage/legacyInventory.ts"), name: "LegacyInventory", formats: ["iife"], fileName: () => file.slice(dirname(file).length + 1) },
   } });
 } else if (command === "compare" && args.length === 4) {
   const [captureFile, cloudFile, reportFile, reference] = args;
@@ -24,7 +24,7 @@ if (command === "browser-bundle" && args.length === 1) {
   const cloud = JSON.parse(await readFile(cloudFile, "utf8"));
   const server = await createServer({ root, configFile: false, server: { middlewareMode: true }, appType: "custom" });
   try {
-    const { compareLegacyInventory } = await server.ssrLoadModule("/src/legacy/localStorage/legacyInventory.ts");
+    const { compareLegacyInventory } = await server.ssrLoadModule("/20_module/00_common/src/legacy/localStorage/legacyInventory.ts");
     const report = await compareLegacyInventory(capture, cloud);
     await mkdir(dirname(output), { recursive: true });
     await writeFile(output, JSON.stringify({ ...report, sourceExportReference: reference }, null, 2), { flag: "wx" });

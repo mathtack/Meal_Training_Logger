@@ -11,7 +11,7 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 
 ## Current persistence model
 
-アプリの1日分データ契約は `src/domain/type.ts` の `DailyRecordAggregate` を基準とする。
+アプリの1日分データ契約は `20_module/00_common/src/domain/type.ts` の `DailyRecordAggregate` を基準とする。
 
 環境ごとの接続先と稼働中の保存経路は [現行環境](current-state.md) を参照する。
 
@@ -23,18 +23,18 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 
 旧 localStorage repository / service / write storage は廃止済み。browser に残る
 `daily_record:<ISODate>` データは削除せず、将来の migration 調査用入力としてだけ扱う。
-`src/legacy/localStorage/readLegacyDailyRecords.ts` は、呼出側から明示的に渡された storage の
+`20_module/00_common/src/legacy/localStorage/readLegacyDailyRecords.ts` は、呼出側から明示的に渡された storage の
 対象 key だけを読み、現行 aggregate の top-level shape と key / record date の整合を確認する。
 不正候補は reason と raw value を返し、正規化、書込、削除、clear、クラウドへの自動昇格を行わない。
 現行 application runtime はこの reader を import しない。Supabase Auth が session 維持に利用する
 storage は別責務であり、この変更では Auth 設定・session data の読み書き・ログイン挙動を変更しない。
 
-Supabaseへの保存・読出・履歴・削除は `src/app/dailyRecordPersistence.ts` がbuild設定に対応するサービスへ委譲する。
+Supabase への保存・読出・履歴・削除は `20_module/S-02_daily-record-persistence/src/dailyRecordPersistence.ts` が正規化サービスへ委譲する。
 
 Supabase persistence service は save / read / delete の成功・not-found・errorを
 呼び出し側が区別できる result contract と、record date降順のremote history APIを持つ。
 service unit tests と DailyRecordForm component tests を持つ。履歴は Supabase の
-`record_date` と aggregate 内の `daily_record.updated_at` を使用する。
+`daily_record` の `record_date` と `updated_at` を使用する。
 
 Supabase client は development / production を問わず初期化されるため、ローカル開発でも `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が必要。
 
@@ -78,17 +78,17 @@ RLS は有効で、ユーザー本人の行のみ操作可能とする。
 
 `20260911091026_normalized_atomic_write_rpc.sql` はauthenticated ownership RLSと明示grant、`save_daily_record_normalized(jsonb)` を定義する。RPCは `SECURITY INVOKER`、空の `search_path`、authenticated限定EXECUTEとし、最初の保存で `app_user` を冪等作成する。同じuser/dateのrootをlockし、root ID / created_atを維持して全childをtransaction内で置換する。root updated_atはDB transaction時刻とする。schema contractとRPCの両migrationはlive適用済み。
 
-- `src/app/dailyRecordNormalizedWriteMapper.ts` / `dailyRecordNormalizedWriteService.ts`: aggregateの検証・order正規化と保存RPC呼出。
-- `src/app/dailyRecordNormalizedQueryService.ts`: root起点のrelational read、root列だけのhistory、atomic delete RPC。親子関係はmigrationのcomposite FK名を指定する。
-- `src/app/dailyRecordNormalizedReadMapper.ts`: DB responseからaggregateへ復元。全childのowner / parent ID、型、必須field、TEXT / SETSを検証し、不正な応答をpartial recordとして返さない。wellnessはnull / 0行をnull、1行をobjectとして復元し、複数行を拒否する。
+- `20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedWriteMapper.ts` / `dailyRecordNormalizedWriteService.ts`: aggregateの検証・order正規化と保存RPC呼出。
+- `20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedQueryService.ts`: root起点のrelational read、root列だけのhistory、atomic delete RPC。親子関係はmigrationのcomposite FK名を指定する。
+- `20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper.ts`: DB responseからaggregateへ復元。全childのowner / parent ID、型、必須field、TEXT / SETSを検証し、不正な応答をpartial recordとして返さない。wellnessはnull / 0行をnull、1行をobjectとして復元し、複数行を拒否する。
 
 読込は各階層の保存済みorderでsortし、order値、ID、timestamp、foodのnullを保持する。DB専用child user_idとrelation fieldをdomain objectへ持ち込まない。historyは `record_date` 降順のkeyset paginationを使い、空pageまで取得する。途中の失敗時にpartial historyを成功扱いにしない。
 
 readは `found / not_found / error`、deleteは `deleted / not_found / error`、historyは `success / error` を返す。delete RPCは認証userと指定dateでrootを削除し、clientは返却identityを確認する。FoodMaterialは現行aggregateに存在しないためread/write mapperの対象外であり、root削除時はFK cascadeに含まれる。
 
-`src/app/dailyRecordPersistence.ts` はbuild時の `VITE_DAILY_RECORD_PERSISTENCE` でUI経路を選択する。既定値は `jsonb`。 `normalized` では読込・履歴・保存・削除を正規化サービスへ接続し、エラーは画面に伝える。別の保存先への自動fallbackは行わない。
+アプリは正規化テーブルと正規化 RPC を使用する。通信や検証のエラーは画面に伝える。
 
-`20261105214519_private_backfill_ledger.sql` はnormalized writerを共通化し、private ledgerと管理者向けinvoker routineを追加する。live適用済み。台帳と管理者向けroutineはbrowser roleからアクセスできず、private schemaはData APIに公開されていない。検証手順は [backfill runbook](backfill.md) を参照する。
+`20261105214519_private_backfill_ledger.sql` はnormalized writerを共通化し、private ledgerと管理者向けinvoker routineを追加する。live適用済み。台帳と管理者向けroutineはbrowser roleからアクセスできず、private schemaはData APIに公開されていない。初回移行の監査には [完了記録 #85](https://github.com/mathtack/Meal_Training_Logger/issues/85) と [退役前の手順・ソースのスナップショット](https://github.com/mathtack/Meal_Training_Logger/tree/3141f48d0903dd98ee064314b355b9a9ef093b9b) を参照する。現行運用は [本番運用](../00_docs/product_operations.md) を参照する。
 
 `20261105220611_narrow_jsonb_runtime_access.sql` はlive適用済み。既存JSONB経路のownership policyをauthenticatedに限定し、`app_user` のSELECT / INSERT / UPDATEと `daily_record_store` のCRUDをauthenticatedへgrantする。
 
@@ -108,11 +108,11 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 優先順位:
 
-1. アプリのデータ契約: `src/domain/type.ts`
-2. 永続化サービスの選択: `src/app/dailyRecordPersistence.ts`
+1. アプリのデータ契約: `20_module/00_common/src/domain/type.ts`
+2. 永続化サービスの入口: `20_module/S-02_daily-record-persistence/src/dailyRecordPersistence.ts`
 3. Supabase schema / RLS: `supabase/migrations/`
 
-`src/legacy/localStorage/readLegacyDailyRecords.ts` は migration input の読取境界であり、
+`20_module/00_common/src/legacy/localStorage/readLegacyDailyRecords.ts` は migration input の読取境界であり、
 現行 persistence の SSOT ではない。
 
 Excel / DBML / version 別 Markdown を並列の正本として管理しない。

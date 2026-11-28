@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deps:circular": "madge src --circular --extensions ts,tsx",
+    "deps:circular": "madge 20_module --circular --extensions ts,tsx",
     "test": "vitest"
   },
   "dependencies": {
