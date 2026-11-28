@@ -1,12 +1,11 @@
-// src/ui/meal/MealEditor.tsx
 import { useMemo } from "react";
 import type {
   DailyRecordAggregate,
   MealAggregate,
   MealRecord,
   FoodItem,
-} from "../../../20_module/00_common/src/domain/type";
-import { generateUUID } from "../../../20_module/00_common/src/domain/generateUUID";
+} from "../../../00_common/src/domain/type";
+import { generateUUID } from "../../../00_common/src/domain/generateUUID";
 
 type MealCategory = "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK";
 

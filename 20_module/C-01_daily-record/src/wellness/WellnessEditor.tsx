@@ -1,5 +1,5 @@
 import React from "react";
-import type { DailyRecordAggregate, WellnessRecord } from "../../../20_module/00_common/src/domain/type";
+import type { DailyRecordAggregate, WellnessRecord } from "../../../00_common/src/domain/type";
 
 type Props = {
   record: DailyRecordAggregate;

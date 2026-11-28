@@ -1,4 +1,3 @@
-// src/ui/exercise/ExerciseSessionsEditor.tsx
 import React from "react";
 import type {
   DailyRecordAggregate,
@@ -9,10 +8,10 @@ import type {
   RecordingStyle,
   SetItem,
   UUID,
-} from "../../../20_module/00_common/src/domain/type";
-import { LOAD_UNIT_LABEL } from "../../../20_module/00_common/src/domain/labels/wellnessLabels";
-import { generateUUID } from "../../../20_module/00_common/src/domain/generateUUID";
-import { exerciseClockTime } from "../../../20_module/00_common/src/domain/exerciseClockTime";
+} from "../../../00_common/src/domain/type";
+import { LOAD_UNIT_LABEL } from "../../../00_common/src/domain/labels/wellnessLabels";
+import { generateUUID } from "../../../00_common/src/domain/generateUUID";
+import { exerciseClockTime } from "../../../00_common/src/domain/exerciseClockTime";
 
 type Props = {
   record: DailyRecordAggregate;

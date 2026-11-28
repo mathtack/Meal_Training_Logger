@@ -1,7 +1,6 @@
-// src/ui/weights/WeightEditor.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import type { DailyRecordAggregate, WeightRecord, ISODateTime } from "../../../20_module/00_common/src/domain/type";
-import { generateUUID } from "../../../20_module/00_common/src/domain/generateUUID";
+import type { DailyRecordAggregate, WeightRecord, ISODateTime } from "../../../00_common/src/domain/type";
+import { generateUUID } from "../../../00_common/src/domain/generateUUID";
 
 type Props = {
   record: DailyRecordAggregate;

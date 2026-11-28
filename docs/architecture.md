@@ -10,11 +10,11 @@
 ```text
 src/
   legacy/     explicit read-only input for future migration
-  ui/         DailyRecord input UI and editors
   App.tsx     application composition
   main.tsx    application entry
 20_module/
   00_common/   shared data contract, helpers, client and test fixtures
+  C-01_daily-record/  daily form, editors and tests
   C-06_report/  report specification, implementation and tests
   S-01_auth/    authentication specification and implementation
   S-02_daily-record-persistence/  normalized persistence and its tests
@@ -45,7 +45,7 @@ Domain layer は factory、normalization などアプリ固有のルールを担
 
 ### UI
 
-`src/ui/` は入力・表示・ユーザー操作を担う。Domain rule や persistence rule を UI に重複実装しない。
+[C-01](../20_module/C-01_daily-record/spec.md) は日次記録の入力・表示・ユーザー操作を担う。Domain rule や persistence rule を UI に重複実装しない。
 
 ### Auth / external client
 

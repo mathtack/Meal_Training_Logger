@@ -4,15 +4,15 @@ import type {
   DailyRecordAggregate,
   DailyRecordSummary,
   ISODate,
-} from "../../20_module/00_common/src/domain/type";
-import { createEmptyCloudDailyRecord } from "../../20_module/S-02_daily-record-persistence/src/dailyRecordCloud";
-import { dailyRecordPersistence as persistence } from "../../20_module/S-02_daily-record-persistence/src/dailyRecordPersistence";
+} from "../../00_common/src/domain/type";
+import { createEmptyCloudDailyRecord } from "../../S-02_daily-record-persistence/src/dailyRecordCloud";
+import { dailyRecordPersistence as persistence } from "../../S-02_daily-record-persistence/src/dailyRecordPersistence";
 import { ExerciseSessionsEditor } from "./exercise/ExerciseSessionsEditor";
 import { WeightEditor } from "./weights/WeightEditor";
 import { WellnessEditor } from "./wellness/WellnessEditor";
 import { MealEditor } from "./meal/MealEditor";
-import { DailyRecordReportView } from "../../20_module/C-06_report/src/DailyRecordReportView";
-import { useAuth } from "../../20_module/S-01_auth/src/AuthContext";
+import { DailyRecordReportView } from "../../C-06_report/src/DailyRecordReportView";
+import { useAuth } from "../../S-01_auth/src/AuthContext";
 
 type TabKey = "weight" | "wellness" | "meal" | "exercise";
 const TAB_ORDER: TabKey[] = ["weight", "wellness", "meal", "exercise"];

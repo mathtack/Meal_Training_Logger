@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DailyRecordAggregate, ISODate } from "../../20_module/00_common/src/domain/type";
+import type { DailyRecordAggregate, ISODate } from "../../00_common/src/domain/type";
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),
@@ -12,17 +12,17 @@ const mocks = vi.hoisted(() => ({
   deleteRecord: vi.fn(),
 }));
 
-vi.mock("../../20_module/S-01_auth/src/AuthContext", () => ({
+vi.mock("../../S-01_auth/src/AuthContext", () => ({
   useAuth: mocks.useAuth,
 }));
 
-vi.mock("../../20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedQueryService", () => ({
+vi.mock("../../S-02_daily-record-persistence/src/dailyRecordNormalizedQueryService", () => ({
   fetchDailyRecordNormalized: mocks.fetchRecord,
   fetchDailyRecordHistoryNormalized: mocks.fetchHistory,
   deleteDailyRecordNormalized: mocks.deleteRecord,
 }));
 
-vi.mock("../../20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedWriteService", () => ({
+vi.mock("../../S-02_daily-record-persistence/src/dailyRecordNormalizedWriteService", () => ({
   saveDailyRecordNormalized: mocks.saveRecord,
 }));
 
@@ -69,7 +69,7 @@ vi.mock("./meal/MealEditor", () => ({
   MealEditor: () => <div>meal editor</div>,
 }));
 
-vi.mock("../../20_module/C-06_report/src/DailyRecordReportView", () => ({
+vi.mock("../../C-06_report/src/DailyRecordReportView", () => ({
   DailyRecordReportView: () => <div>report view</div>,
 }));
 
@@ -180,7 +180,7 @@ describe("DailyRecordForm cloud persistence routing", () => {
     expect(mocks.fetchHistory).not.toHaveBeenCalled();
   });
 
-  it("treats not_found as a new cloud record for the authenticated user", async () => {
+  it("opens a missing cloud record as an editable day with all four sections", async () => {
     mocks.fetchRecord.mockResolvedValue({ status: "not_found" });
 
     render(<DailyRecordForm />);
@@ -190,6 +190,17 @@ describe("DailyRecordForm cloud persistence routing", () => {
     ).toBeDefined();
     expect(screen.getByTestId("record-owner").textContent).toBe(USER_ID);
     expect(screen.getByTestId("record-date").textContent).toBe(today());
+    for (const [tab, editor] of [
+      ["体重", "weight editor"],
+      ["健康体調", "wellness editor"],
+      ["食事", "meal editor"],
+      ["運動", "入力を変更"],
+    ]) {
+      fireEvent.click(screen.getByRole("tab", { name: tab }));
+      expect(screen.getByText(editor)).toBeDefined();
+    }
+    fireEvent.click(screen.getByRole("button", { name: "表示・保存" }));
+    expect(screen.getByText("report view")).toBeDefined();
   });
 
   it("shows a read error and never adopts localStorage as formal data", async () => {
