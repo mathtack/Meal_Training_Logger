@@ -22,8 +22,8 @@
 
 - `npm run build`: PASS
 - `TZ=Asia/Tokyo npm test -- --run`: PASS
-  - 16 test files
-  - 106 tests passed
+  - 15 test files
+  - 101 tests passed
 - `npm run deps:circular`: PASS
   - 0 circular
 - `npm run lint`: FAIL

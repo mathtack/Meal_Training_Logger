@@ -13,8 +13,6 @@
 
 - legacy `daily_record:*` reader の対象選別・診断・read-only 保証
 - offline legacy inventoryの原本digest / owner確認 / canonical比較 / conflict・quarantine境界（手順: `docs/legacy-inventory.md`）
-- backfillのowner適用・重複・採用判断・timezone・checksum。PGliteのledger / rollback / retry / idempotency検証は `node scripts/verify-backfill-db.mjs <pglite-module>`。
-- JSONB権限収束のfresh / live-like rehearsalは `node scripts/verify-jsonb-preflight.mjs <pglite-module> [private-scoped-snapshot]`。snapshot指定時は既存JSONB・profileのcountとchecksumも照合する。Auth IDは隔離DBのFK検証に使う。
 - Supabase persistence service contract / query / error handling
 - DailyRecordForm の認証 gate / cloud save・load・history・delete routing / localStorage 非依存
 - cloud 保存前の aggregate 正規化 / ownership / timestamp
@@ -47,7 +45,7 @@ node scripts/verify-jsonb-retirement.mjs (Join-Path $dbTestDependencies 'node_mo
 
 正規化の保存・読込・削除、履歴降順、`food_material` を含む関連行のカスケード、同じ所有者の別日と別所有者の同日の保持を検証する。正規化10表の所有者分離と匿名アクセス拒否、直接 DELETE・モード操作・内部処理の権限、profile と不正 payload の境界、凍結・失敗時の原子性も確認する。
 
-旧 JSONB の table／column 権限の拒否と、自動更新が停止し、旧コピーを削除しても正規化の読込・保存が機能することを確認する。旧工程の再演には `node scripts/verify-cutover-mirror.mjs <pglite-module>` を使用する。当時の migration までを適用し、JST mirror の生成・失敗時の原子性・旧経路への切り戻しを確認できる。
+旧 JSONB の table／column 権限の拒否と、自動更新が停止し、旧コピーを削除しても正規化の読込・保存が機能することを確認する。
 
 この検証はDBのRLS / FK semanticsを確認する。PostgREST serverを起動しないため、実環境のrelationship解決・API行数上限・認証付き通信はlive適用時のsystem testで別途確認する。HTTP contract testsは実際のsupabase-js clientと架空のfetch responseを使用する。
 

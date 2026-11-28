@@ -88,7 +88,7 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 アプリは正規化テーブルと正規化 RPC を使用する。通信や検証のエラーは画面に伝える。
 
-`20261105214519_private_backfill_ledger.sql` はnormalized writerを共通化し、private ledgerと管理者向けinvoker routineを追加する。live適用済み。台帳と管理者向けroutineはbrowser roleからアクセスできず、private schemaはData APIに公開されていない。検証手順は [backfill runbook](backfill.md) を参照する。
+`20261105214519_private_backfill_ledger.sql` はnormalized writerを共通化し、private ledgerと管理者向けinvoker routineを追加する。live適用済み。台帳と管理者向けroutineはbrowser roleからアクセスできず、private schemaはData APIに公開されていない。初回移行の監査には [完了記録 #85](https://github.com/mathtack/Meal_Training_Logger/issues/85) と [退役前の手順・ソースのスナップショット](https://github.com/mathtack/Meal_Training_Logger/tree/3141f48d0903dd98ee064314b355b9a9ef093b9b) を参照する。現行運用は [本番運用](../00_docs/product_operations.md) を参照する。
 
 `20261105220611_narrow_jsonb_runtime_access.sql` はlive適用済み。既存JSONB経路のownership policyをauthenticatedに限定し、`app_user` のSELECT / INSERT / UPDATEと `daily_record_store` のCRUDをauthenticatedへgrantする。
 
