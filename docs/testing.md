@@ -35,21 +35,19 @@ npm test -- --run
 
 ### Normalized database verification
 
-`scripts/verify-normalized-query-db.mjs` は外部接続を行わず、PGliteのin-memory PostgreSQLへGit-managed migrationsと架空の2ユーザーデータを構築する。root削除から全10 tableへのcascade、別user / 別dateの保持、RLS、anon拒否、history、再削除、既存JSONBの非変更を検証する。
+`scripts/verify-jsonb-retirement.mjs` は PGlite の in-memory PostgreSQL に Git 管理の migration と合成データを適用し、空 DB の初期化と旧構成からの更新を検証する。外部 DB への接続は行わない。
 
 Node.js 22.18以上を使用する。検証依存を一時フォルダへ入れればapplicationのpackage / lockfileを変更せず実行できる。
 
 ```powershell
 $dbTestDependencies = Join-Path ([IO.Path]::GetTempPath()) ('meal-logger-db-test-' + [guid]::NewGuid().ToString('N'))
 npm install --prefix $dbTestDependencies --no-save --package-lock=false @electric-sql/pglite@0.5.8
-node scripts/verify-normalized-query-db.mjs (Join-Path $dbTestDependencies 'node_modules/@electric-sql/pglite/dist/index.js')
-node scripts/verify-cutover-mirror.mjs (Join-Path $dbTestDependencies 'node_modules/@electric-sql/pglite/dist/index.js')
 node scripts/verify-jsonb-retirement.mjs (Join-Path $dbTestDependencies 'node_modules/@electric-sql/pglite/dist/index.js')
 ```
 
-`verify-cutover-mirror.mjs` は書込モード、所有者境界、正規化から導出したJST mirror、save/delete失敗時に両方の更新が取り消されること、JSONB経路の復旧を隔離DBで検証する。
+正規化の保存・読込・削除、履歴降順、`food_material` を含む関連行のカスケード、同じ所有者の別日と別所有者の同日の保持を検証する。正規化10表の所有者分離と匿名アクセス拒否、直接 DELETE・モード操作・内部処理の権限、profile と不正 payload の境界、凍結・失敗時の原子性も確認する。
 
-`verify-jsonb-retirement.mjs` はJSONB自動更新停止後の正規化CRUD、所有者分離、凍結・失敗時rollback、table/column権限の拒否と、旧JSONB行の削除後も正規化の読込・保存が機能することを検証する。旧JSONB権限・mirrorの検証スクリプトは各工程のmigrationまでを読み込む。
+旧 JSONB の table／column 権限の拒否と、自動更新が停止し、旧コピーを削除しても正規化の読込・保存が機能することを確認する。旧工程の再演には `node scripts/verify-cutover-mirror.mjs <pglite-module>` を使用する。当時の migration までを適用し、JST mirror の生成・失敗時の原子性・旧経路への切り戻しを確認できる。
 
 この検証はDBのRLS / FK semanticsを確認する。PostgREST serverを起動しないため、実環境のrelationship解決・API行数上限・認証付き通信はlive適用時のsystem testで別途確認する。HTTP contract testsは実際のsupabase-js clientと架空のfetch responseを使用する。
 
