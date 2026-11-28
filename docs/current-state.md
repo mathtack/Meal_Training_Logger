@@ -22,19 +22,19 @@
 
 - `npm run build`: PASS
 - `TZ=Asia/Tokyo npm test -- --run`: PASS
-  - 15 test files
-  - 101 tests passed
+  - 17 test files
+  - 115 tests passed
 - `npm run deps:circular`: PASS
   - 0 circular
-- `npm run lint`: FAIL
-  - 8 existing errors
+- `npm run lint`: PASS
+  - 0 errors
 
 最低条件:
 
 - buildを壊さない
 - testsを壊さない
 - circular dependencyを発生させない
-- lint errorを8から増やさない
+- lint errorを0に維持する
 
 環境固有注意:
 

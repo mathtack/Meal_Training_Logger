@@ -14,7 +14,9 @@
 - legacy `daily_record:*` reader の対象選別・診断・read-only 保証
 - offline legacy inventoryの原本digest / owner確認 / canonical比較 / conflict・quarantine境界（手順: `docs/legacy-inventory.md`）
 - Supabase persistence service contract / query / error handling
+- AuthProvider / useAuth のセッション復元・認証状態更新・購読解除
 - DailyRecordForm の認証 gate / cloud save・load・history・delete routing / localStorage 非依存
+- WeightEditor の確定値・下書き分離 / 正規化・IME・時刻往復・クリア／再読込／保存競合の境界
 - cloud 保存前の aggregate 正規化 / ownership / timestamp
 - normalized query serviceのHTTP request / result contract / history pagination
 - normalized read mapperの全階層order / nullable draft / ownership / parent / union検証
