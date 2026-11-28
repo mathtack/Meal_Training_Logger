@@ -49,7 +49,7 @@
 - ログイン済みユーザーの save / load / history / delete は Supabase基準。
 - read error時にlegacy localStorageを正式データとして自動fallbackしない。
 - 通常runtimeは `daily_record:*` localStorageを読書きしない。
-- `src/legacy/localStorage/readLegacyDailyRecords.ts` は将来migration調査用のread-only入口であり、通常runtimeから利用しない。
+- `20_module/00_common/src/legacy/localStorage/readLegacyDailyRecords.ts` は将来migration調査用のread-only入口であり、通常runtimeから利用しない。
 
 詳細な現行仕様は `docs/architecture.md` と `docs/database.md` を正とする。
 

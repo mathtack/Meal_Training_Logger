@@ -3,7 +3,7 @@
 ## Purpose
 
 この文書は Meal & Training Logger の現行テスト方針と品質 gate を定義する。
-具体的な手動システムテストケースは `docs/system-test.md` を参照する。自動テストは `src/` と `20_module/` の実装に隣接する `*.test.ts`・`*.test.tsx` を使用する。
+具体的な手動システムテストケースは `docs/system-test.md` を参照する。自動テストは `20_module/` の実装に隣接する `*.test.ts`・`*.test.tsx` を使用する。
 
 過去 version 別 Test Plan は Git history を参照し、現行 Repository に版別コピーを保持しない。
 

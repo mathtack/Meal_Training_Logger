@@ -1,6 +1,6 @@
 # Read-only legacy inventory
 
-`src/legacy/localStorage/legacyInventory.ts` は通常runtimeから呼ばないoffline調査用入口。
+`20_module/00_common/src/legacy/localStorage/legacyInventory.ts` は通常runtimeから呼ばないoffline調査用入口。
 既存legacy reader経由で `daily_record:*` のみを分類し、localStorage / cloudへ書き込まない。
 Auth session valueを読まない。原本JSONやreportはRepository外のアクセス制限された保管先に置く。
 

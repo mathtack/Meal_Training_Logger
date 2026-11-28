@@ -25,7 +25,7 @@ const { PGlite } = await import(pathToFileURL(resolve(modulePath)).href);
 const server = await createServer({ root, configFile: false, server: { middlewareMode: true, ws: false }, appType: "custom" });
 const db = new PGlite();
 try {
-  const { prepareBackfill, backfillChecksums, emptyCounts, tableNames } = await server.ssrLoadModule("/src/legacy/localStorage/backfillPlan.ts");
+  const { prepareBackfill, backfillChecksums, emptyCounts, tableNames } = await server.ssrLoadModule("/20_module/00_common/src/legacy/localStorage/backfillPlan.ts");
   const { mapNormalizedDailyRecord } = await server.ssrLoadModule("/20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper.ts");
   const { rows, excluded } = await prepareBackfill(cloud, capture, inventory, Array.isArray(decisions) ? decisions : [decisions], sessionOffset);
   const sourceDigest = raw.map(sha);

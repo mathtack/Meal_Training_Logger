@@ -23,7 +23,7 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 
 旧 localStorage repository / service / write storage は廃止済み。browser に残る
 `daily_record:<ISODate>` データは削除せず、将来の migration 調査用入力としてだけ扱う。
-`src/legacy/localStorage/readLegacyDailyRecords.ts` は、呼出側から明示的に渡された storage の
+`20_module/00_common/src/legacy/localStorage/readLegacyDailyRecords.ts` は、呼出側から明示的に渡された storage の
 対象 key だけを読み、現行 aggregate の top-level shape と key / record date の整合を確認する。
 不正候補は reason と raw value を返し、正規化、書込、削除、clear、クラウドへの自動昇格を行わない。
 現行 application runtime はこの reader を import しない。Supabase Auth が session 維持に利用する
@@ -112,7 +112,7 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 2. 永続化サービスの入口: `20_module/S-02_daily-record-persistence/src/dailyRecordPersistence.ts`
 3. Supabase schema / RLS: `supabase/migrations/`
 
-`src/legacy/localStorage/readLegacyDailyRecords.ts` は migration input の読取境界であり、
+`20_module/00_common/src/legacy/localStorage/readLegacyDailyRecords.ts` は migration input の読取境界であり、
 現行 persistence の SSOT ではない。
 
 Excel / DBML / version 別 Markdown を並列の正本として管理しない。

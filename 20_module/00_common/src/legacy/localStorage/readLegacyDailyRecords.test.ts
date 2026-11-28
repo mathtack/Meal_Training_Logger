@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DailyRecordAggregate, ISODate } from "../../../20_module/00_common/src/domain/type";
+import type { DailyRecordAggregate, ISODate } from "../../domain/type";
 import {
   readLegacyDailyRecordSnapshot,
   type LegacyDailyRecordStorageReader,

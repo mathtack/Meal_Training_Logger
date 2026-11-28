@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { normalizedRecordFixture, normalizedDate, normalizedUserId, fixtureId } from "../../../20_module/00_common/testing/normalizedRecordFixture";
-import { mapNormalizedDailyRecord } from "../../../20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper";
+import { normalizedRecordFixture, normalizedDate, normalizedUserId, fixtureId } from "../../../testing/normalizedRecordFixture";
+import { mapNormalizedDailyRecord } from "../../../../S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper";
 import { backfillChecksums, prepareBackfill, type BackfillSnapshot } from "./backfillPlan";
 import { captureLegacyInventory, compareLegacyInventory } from "./legacyInventory";
 

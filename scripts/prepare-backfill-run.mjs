@@ -61,11 +61,11 @@ async function main() {
   const server = await createServer({ root, configFile: false, server: { middlewareMode: true, ws: false }, appType: "custom" });
   const db = new PGlite();
   try {
-    const { canonicalJSON } = await server.ssrLoadModule("/src/legacy/localStorage/legacyInventory.ts");
+    const { canonicalJSON } = await server.ssrLoadModule("/20_module/00_common/src/legacy/localStorage/legacyInventory.ts");
     const archiveRows = backup.records.map(({ id, user_id, record_date, record_json }) => ({ store_id:id, user_id, record_date, record_json }));
     if (canonicalJSON(archiveRows.sort((a,b) => a.store_id.localeCompare(b.store_id))) !==
         canonicalJSON([...cloud.rows].sort((a,b) => a.store_id.localeCompare(b.store_id)))) throw Error("cloud and restore inputs differ");
-    const { prepareBackfill, backfillChecksums, tableNames } = await server.ssrLoadModule("/src/legacy/localStorage/backfillPlan.ts");
+    const { prepareBackfill, backfillChecksums, tableNames } = await server.ssrLoadModule("/20_module/00_common/src/legacy/localStorage/backfillPlan.ts");
     const { mapNormalizedDailyRecord } = await server.ssrLoadModule("/20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper.ts");
     const sessionOffset = "+09:00";
     const { rows, excluded } = await prepareBackfill(cloud, capture, inventory, Array.isArray(decisions) ? decisions : [decisions], sessionOffset);

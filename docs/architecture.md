@@ -8,28 +8,28 @@
 ## Application structure
 
 ```text
-src/
-  legacy/     explicit read-only input for future migration
-  App.tsx     application composition
-  main.tsx    application entry
 20_module/
-  00_common/   shared data contract, helpers, client and test fixtures
+  00_app/src/         application entry and composition
+  00_common/src/      shared data contract, helpers, client and offline legacy tooling
+  00_common/testing/  shared test fixtures
   C-01_daily-record/  daily form, editors and tests
   C-06_report/  report specification, implementation and tests
   S-01_auth/    authentication specification and implementation
   S-02_daily-record-persistence/  normalized persistence and its tests
+scripts/              isolated database checks and offline tooling entry points
 ```
 
 主要フロー:
 
 ```text
-main.tsx
-  -> App.tsx
-    -> AuthPanel
-    -> DailyRecordForm
-      -> dailyRecordCloud
-      -> dailyRecordPersistence
-        -> dailyRecordNormalizedQueryService / dailyRecordNormalizedWriteService
+index.html
+  -> 20_module/00_app/src/main.tsx
+    -> App.tsx
+      -> AuthPanel
+      -> DailyRecordForm
+        -> dailyRecordCloud
+        -> dailyRecordPersistence
+          -> dailyRecordNormalizedQueryService / dailyRecordNormalizedWriteService
 ```
 
 ## Responsibility boundaries
@@ -53,7 +53,7 @@ Auth は [S-01](../20_module/S-01_auth/spec.md)、Supabase client 初期化は [
 
 ### Legacy input
 
-`src/legacy/localStorage/readLegacyDailyRecords.ts` は、将来の明示的な migration 処理が
+`20_module/00_common/src/legacy/localStorage/readLegacyDailyRecords.ts` は、将来の明示的な migration 処理が
 `daily_record:<ISODate>` を調査するための読み取り専用入口である。通常の application runtime
 から import せず、書込・削除・clear・正規化・クラウドへの自動昇格は行わない。
 Supabase Auth の session storage は別責務であり、この reader の対象にも変更対象にも含めない。
@@ -90,8 +90,8 @@ Supabase Auth の session storage は別責務であり、この reader の対�
 ## Related SSOT
 
 - Data contract: `20_module/00_common/src/domain/type.ts`
-- Current source: `src/`
-- Legacy migration input: `src/legacy/localStorage/readLegacyDailyRecords.ts`
+- Current source: `20_module/`
+- Legacy migration input: `20_module/00_common/src/legacy/localStorage/readLegacyDailyRecords.ts`
 - DB DDL / RLS: `supabase/migrations/`
 - Database explanation: `docs/database.md`
 - Test policy: `docs/testing.md`

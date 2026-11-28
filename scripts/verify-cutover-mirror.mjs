@@ -1,16 +1,21 @@
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "vite";
 import { initializeBackfillTestDatabase, readNormalized } from "./backfill-db.mjs";
 import { normalizedRecordFixture, normalizedUserId, normalizedDate, fixtureId } from "../20_module/00_common/testing/normalizedRecordFixture.ts";
 
 const { PGlite } = await import(pathToFileURL(resolve(process.argv[2])).href);
-const server = await createServer({ configFile: false, server: { middlewareMode: true, ws: false }, appType: "custom" });
+const server = await createServer({
+  root: fileURLToPath(new URL("../", import.meta.url)),
+  configFile: false,
+  server: { middlewareMode: true, ws: false },
+  appType: "custom",
+});
 const db = new PGlite();
 try {
   const { mapNormalizedDailyRecord } = await server.ssrLoadModule("/20_module/S-02_daily-record-persistence/src/dailyRecordNormalizedReadMapper.ts");
-  const { backfillChecksums } = await server.ssrLoadModule("/src/legacy/localStorage/backfillPlan.ts");
+  const { backfillChecksums } = await server.ssrLoadModule("/20_module/00_common/src/legacy/localStorage/backfillPlan.ts");
   const owner = normalizedUserId, date = normalizedDate;
   const other = "20000000-0000-4000-8000-000000000001";
   const record = mapNormalizedDailyRecord(normalizedRecordFixture(), { userId: owner, date });

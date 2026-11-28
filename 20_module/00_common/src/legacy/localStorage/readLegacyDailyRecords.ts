@@ -1,4 +1,4 @@
-import type { DailyRecordAggregate, ISODate } from "../../../20_module/00_common/src/domain/type";
+import type { DailyRecordAggregate, ISODate } from "../../domain/type";
 
 export const LEGACY_DAILY_RECORD_KEY_PREFIX = "daily_record:";
 
