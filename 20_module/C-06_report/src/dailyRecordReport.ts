@@ -1,4 +1,4 @@
-import { exerciseClockTime } from "../../../src/domain/exerciseClockTime";
+import { exerciseClockTime } from "../../00_common/src/domain/exerciseClockTime";
 import type {
   DailyRecordAggregate,
   ISODateTime,
@@ -9,7 +9,7 @@ import type {
   FoodItem,
   ExerciseItem,
   SetItem,
-} from "../../../src/domain/type";
+} from "../../00_common/src/domain/type";
 
 import {
   SLEEP_DURATION_LABEL,
@@ -20,7 +20,7 @@ import {
   HUNGER_LEVEL_LABEL,
   BOWEL_MOVEMENT_LABEL,
   lookupLabel,
-} from "../../../src/domain/labels/wellnessLabels";
+} from "../../00_common/src/domain/labels/wellnessLabels";
 
 export type ReportAudience = "chatgpt" | "dietitian" | "copilot";
 

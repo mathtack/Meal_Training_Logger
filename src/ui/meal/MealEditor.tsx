@@ -5,8 +5,8 @@ import type {
   MealAggregate,
   MealRecord,
   FoodItem,
-} from "../../domain/type";
-import { generateUUID } from "../../domain/generateUUID";
+} from "../../../20_module/00_common/src/domain/type";
+import { generateUUID } from "../../../20_module/00_common/src/domain/generateUUID";
 
 type MealCategory = "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK";
 

@@ -4,7 +4,7 @@ import type {
   DailyRecordAggregate,
   DailyRecordSummary,
   ISODate,
-} from "../domain/type";
+} from "../../20_module/00_common/src/domain/type";
 import { createEmptyCloudDailyRecord } from "../app/dailyRecordCloud";
 import { dailyRecordPersistence as persistence } from "../app/dailyRecordPersistence";
 import { ExerciseSessionsEditor } from "./exercise/ExerciseSessionsEditor";

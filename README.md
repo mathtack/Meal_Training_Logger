@@ -15,7 +15,7 @@
 | 開発計画・承認・進捗・引き継ぎ | [GitHub Issues](https://github.com/mathtack/Meal_Training_Logger/issues) |
 | 再利用可能な Agent 手順 | [Skills](skills/README.md) |
 
-アプリのバージョンは [package.json](package.json)、データ契約は [型定義](src/domain/type.ts)、DB DDL と RLS は [migrations](supabase/migrations/) を参照する。変更履歴は Git で確認する。
+アプリのバージョンは [package.json](package.json)、データ契約は [型定義](20_module/00_common/src/domain/type.ts)、DB DDL と RLS は [migrations](supabase/migrations/) を参照する。変更履歴は Git で確認する。
 
 ## ローカル起動
 

@@ -1,10 +1,10 @@
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../../20_module/00_common/src/lib/supabaseClient";
 import type {
   DailyRecord,
   DailyRecordAggregate,
   ISODate,
   UUID,
-} from "../domain/type";
+} from "../../20_module/00_common/src/domain/type";
 import { mapDailyRecordToNormalizedSavePayload } from "./dailyRecordNormalizedWriteMapper";
 
 const FUNCTION_NAME = "save_daily_record_normalized";

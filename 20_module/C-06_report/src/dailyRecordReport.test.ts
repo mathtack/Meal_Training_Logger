@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildDailyRecordReport } from "./dailyRecordReport";
-import type { DailyRecordAggregate, ISODateTime } from "../../../src/domain/type";
-import { createEmptyDailyRecordAggregate } from "../../../src/domain/factories/createEmptyDailyRecordAggregate";
+import type { DailyRecordAggregate, ISODateTime } from "../../00_common/src/domain/type";
+import { createEmptyDailyRecordAggregate } from "../../00_common/src/domain/factories/createEmptyDailyRecordAggregate";
 
 // テスト用: 「ローカル日付＋ローカル時刻」→ UTC ISO に変換
 const toUtcIso = (date: string, time: string): ISODateTime => {

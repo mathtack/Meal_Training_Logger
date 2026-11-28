@@ -1,4 +1,3 @@
-// src/domain/factories/createEmptyDailyRecordAggregate.test.ts
 import { describe, it, expect } from "vitest";
 import { createEmptyDailyRecordAggregate } from "./createEmptyDailyRecordAggregate";
 

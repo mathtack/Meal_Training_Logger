@@ -1,5 +1,5 @@
-import { normalizeDailyRecordAggregate } from "../../domain/normalizers/normalizeDailyRecordAggregate";
-import type { DailyRecordAggregate } from "../../domain/type";
+import { normalizeDailyRecordAggregate } from "../../../20_module/00_common/src/domain/normalizers/normalizeDailyRecordAggregate";
+import type { DailyRecordAggregate } from "../../../20_module/00_common/src/domain/type";
 import { LEGACY_DAILY_RECORD_KEY_PREFIX, readLegacyDailyRecordSnapshot, type LegacyDailyRecordStorageReader } from "./readLegacyDailyRecords";
 import { validateInventoryRecord } from "./validateInventoryRecord";
 

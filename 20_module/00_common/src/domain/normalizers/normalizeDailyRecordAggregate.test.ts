@@ -1,4 +1,3 @@
-// src/domain/normalizers/normalizeDailyRecordAggregate.test.ts
 import { describe, it, expect } from "vitest";
 import { normalizeDailyRecordAggregate } from "./normalizeDailyRecordAggregate";
 import type {

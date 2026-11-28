@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DailyRecordAggregate, ISODate } from "../domain/type";
+import type { DailyRecordAggregate, ISODate } from "../../20_module/00_common/src/domain/type";
 
 const mocks = vi.hoisted(() => ({
   useAuth: vi.fn(),

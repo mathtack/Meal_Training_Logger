@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "vite";
 import { initializeBackfillTestDatabase, readNormalized } from "./backfill-db.mjs";
-import { normalizedRecordFixture, normalizedUserId, normalizedDate, fixtureId } from "../src/app/testing/normalizedRecordFixture.ts";
+import { normalizedRecordFixture, normalizedUserId, normalizedDate, fixtureId } from "../20_module/00_common/testing/normalizedRecordFixture.ts";
 
 // Only synthetic data in a local in-memory PostgreSQL instance.
 const modulePath = process.argv[2];

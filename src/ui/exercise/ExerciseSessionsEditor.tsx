@@ -9,10 +9,10 @@ import type {
   RecordingStyle,
   SetItem,
   UUID,
-} from "../../domain/type";
-import { LOAD_UNIT_LABEL } from "../../domain/labels/wellnessLabels";
-import { generateUUID } from "../../domain/generateUUID";
-import { exerciseClockTime } from "../../domain/exerciseClockTime";
+} from "../../../20_module/00_common/src/domain/type";
+import { LOAD_UNIT_LABEL } from "../../../20_module/00_common/src/domain/labels/wellnessLabels";
+import { generateUUID } from "../../../20_module/00_common/src/domain/generateUUID";
+import { exerciseClockTime } from "../../../20_module/00_common/src/domain/exerciseClockTime";
 
 type Props = {
   record: DailyRecordAggregate;

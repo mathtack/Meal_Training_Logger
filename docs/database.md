@@ -11,7 +11,7 @@ DB DDL の SSOT は `supabase/migrations/`。現行初期 DDL は `supabase/migr
 
 ## Current persistence model
 
-アプリの1日分データ契約は `src/domain/type.ts` の `DailyRecordAggregate` を基準とする。
+アプリの1日分データ契約は `20_module/00_common/src/domain/type.ts` の `DailyRecordAggregate` を基準とする。
 
 環境ごとの接続先と稼働中の保存経路は [現行環境](current-state.md) を参照する。
 
@@ -108,7 +108,7 @@ readは `found / not_found / error`、deleteは `deleted / not_found / error`、
 
 優先順位:
 
-1. アプリのデータ契約: `src/domain/type.ts`
+1. アプリのデータ契約: `20_module/00_common/src/domain/type.ts`
 2. 永続化サービスの入口: `src/app/dailyRecordPersistence.ts`
 3. Supabase schema / RLS: `supabase/migrations/`
 

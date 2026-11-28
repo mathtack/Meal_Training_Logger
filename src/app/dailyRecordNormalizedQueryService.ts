@@ -1,5 +1,5 @@
-import { supabase } from "../lib/supabaseClient";
-import type { ISODate, DailyRecordAggregate, DailyRecordSummary } from "../domain/type";
+import { supabase } from "../../20_module/00_common/src/lib/supabaseClient";
+import type { ISODate, DailyRecordAggregate, DailyRecordSummary } from "../../20_module/00_common/src/domain/type";
 import {
   mapNormalizedDailyRecord, mapNormalizedHistoryRow, isNormalizedDeletedRow,
 } from "./dailyRecordNormalizedReadMapper";

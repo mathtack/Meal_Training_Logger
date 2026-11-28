@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import type { DailyRecordAggregate } from "../../../src/domain/type";
+import type { DailyRecordAggregate } from "../../00_common/src/domain/type";
 import {
   buildDailyRecordReport,
   type ReportAudience,

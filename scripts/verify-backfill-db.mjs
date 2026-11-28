@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { createServer } from "vite";
 import { initializeBackfillTestDatabase, registerBackfillRun, applyAndReconcileBackfillRow, retryFailedBackfillRows } from "./backfill-db.mjs";
-import { normalizedRecordFixture, normalizedUserId, normalizedDate, fixtureId } from "../src/app/testing/normalizedRecordFixture.ts";
+import { normalizedRecordFixture, normalizedUserId, normalizedDate, fixtureId } from "../20_module/00_common/testing/normalizedRecordFixture.ts";
 
 const { PGlite } = await import(pathToFileURL(resolve(process.argv[2])).href);
 const server = await createServer({ configFile: false, server: { middlewareMode: true, ws: false }, appType: "custom" });

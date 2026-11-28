@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DailyRecordAggregate, ISODate } from "../domain/type";
+import type { DailyRecordAggregate, ISODate } from "../../20_module/00_common/src/domain/type";
 import {
   createEmptyCloudDailyRecord,
   normalizeCloudDailyRecord,

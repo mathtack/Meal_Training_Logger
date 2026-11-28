@@ -1,4 +1,3 @@
-// src/domain/factories/createEmptyDailyRecordAggregate.ts
 import type { DailyRecordAggregate, ISODate, ISODateTime } from "../type";
 import { generateUUID } from "../generateUUID";
 

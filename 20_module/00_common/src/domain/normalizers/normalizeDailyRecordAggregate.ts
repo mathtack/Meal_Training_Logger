@@ -1,4 +1,3 @@
-// src/domain/normalizers/normalizeDailyRecordAggregate.ts
 import type { DailyRecordAggregate } from "../type";
 import { normalizeExerciseOrders } from "./normalizeExerciseOrders";
 import { normalizeMealOrders } from "./normalizeMealOrders";

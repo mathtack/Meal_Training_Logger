@@ -1,4 +1,3 @@
-// src/domain/labels/wellnessLabels.ts
 
 // ===== ラベル辞書 =====
 

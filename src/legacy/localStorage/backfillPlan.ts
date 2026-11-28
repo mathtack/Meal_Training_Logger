@@ -1,5 +1,5 @@
-import type { DailyRecordAggregate } from "../../domain/type";
-import { normalizeDailyRecordAggregate } from "../../domain/normalizers/normalizeDailyRecordAggregate";
+import type { DailyRecordAggregate } from "../../../20_module/00_common/src/domain/type";
+import { normalizeDailyRecordAggregate } from "../../../20_module/00_common/src/domain/normalizers/normalizeDailyRecordAggregate";
 import { canonicalJSON, compareLegacyInventory, inventoryDigest, type InventoryCapture, type InventoryCloudSnapshot } from "./legacyInventory";
 import { validateInventoryRecord } from "./validateInventoryRecord";
 

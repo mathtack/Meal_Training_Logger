@@ -1,4 +1,3 @@
-// src/domain/normalizers/normalizeExerciseOrders.ts
 import type { DailyRecordAggregate, ExerciseItem } from "../type";
 
 const renumberSets = (item: ExerciseItem): ExerciseItem => {

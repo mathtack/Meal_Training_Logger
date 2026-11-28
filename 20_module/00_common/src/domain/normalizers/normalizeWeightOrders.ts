@@ -1,4 +1,3 @@
-// src/domain/normalizers/normalizeWeightOrders.ts
 import type { DailyRecordAggregate, WeightRecord } from "../type";
 
 const slotRank = (slot: WeightRecord["measurement_time_slot"]): number => {

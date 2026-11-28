@@ -1,4 +1,4 @@
-import type { DailyRecordAggregate, DailyRecordSummary, ExerciseItem } from "../domain/type";
+import type { DailyRecordAggregate, DailyRecordSummary, ExerciseItem } from "../../20_module/00_common/src/domain/type";
 
 type Row = Record<string, unknown>;
 type Decoder = (value: unknown) => unknown;

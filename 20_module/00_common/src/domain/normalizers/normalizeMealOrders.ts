@@ -1,4 +1,3 @@
-// src/domain/normalizers/normalizeMealOrders.ts
 import type { DailyRecordAggregate, MealAggregate, FoodItem } from "../type";
 
 const CATEGORY_ORDER = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"] as const;

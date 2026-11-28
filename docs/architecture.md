@@ -10,14 +10,13 @@
 ```text
 src/
   app/        application service / Supabase persistence
-  domain/     data contract, factory, normalizer, report
   features/   cross-cutting feature such as auth
   legacy/     explicit read-only input for future migration
-  lib/        external client setup
   ui/         DailyRecord input UI and editors
   App.tsx     application composition
   main.tsx    application entry
 20_module/
+  00_common/   shared data contract, helpers, client and test fixtures
   C-06_report/  report specification, implementation and tests
 ```
 
@@ -37,7 +36,7 @@ main.tsx
 
 ### Domain
 
-`src/domain/type.ts` の `DailyRecordAggregate` をアプリ内の1日分データ契約の基準とする。
+`20_module/00_common/src/domain/type.ts` の `DailyRecordAggregate` をアプリ内の1日分データ契約の基準とする。
 Domain layer は factory、normalization などアプリ固有のルールを担う。レポートの表示と生成は [C-06](../20_module/C-06_report/spec.md) が担当する。
 
 ### Application
@@ -51,7 +50,7 @@ Supabase の正規化永続化の入口は `src/app/dailyRecordPersistence.ts`�
 
 ### Auth / external client
 
-Auth は `src/features/auth/`、Supabase client 初期化は `src/lib/` が担当する。
+Auth は `src/features/auth/`、Supabase client 初期化は [共用クライアント](../20_module/00_common/src/lib/supabaseClient.ts) が担当する。
 
 ### Legacy input
 
@@ -91,7 +90,7 @@ Supabase Auth の session storage は別責務であり、この reader の対�
 
 ## Related SSOT
 
-- Data contract: `src/domain/type.ts`
+- Data contract: `20_module/00_common/src/domain/type.ts`
 - Current source: `src/`
 - Legacy migration input: `src/legacy/localStorage/readLegacyDailyRecords.ts`
 - DB DDL / RLS: `supabase/migrations/`

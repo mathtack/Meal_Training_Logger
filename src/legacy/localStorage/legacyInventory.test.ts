@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { mapNormalizedDailyRecord } from "../../app/dailyRecordNormalizedReadMapper";
-import { normalizedRecordFixture, normalizedUserId, normalizedDate } from "../../app/testing/normalizedRecordFixture";
+import { normalizedRecordFixture, normalizedUserId, normalizedDate } from "../../../20_module/00_common/testing/normalizedRecordFixture";
 import { canonicalJSON, captureLegacyInventory, compareLegacyInventory, inventoryDigest, type InventoryCloudSnapshot } from "./legacyInventory";
 
 const source = { sourceId: "fixture-pc", device: "fictional", profile: "test", origin: "https://example.invalid", ownerId: normalizedUserId, ownerConfirmed: true };

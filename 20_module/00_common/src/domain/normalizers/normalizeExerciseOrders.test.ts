@@ -1,4 +1,3 @@
-// src/domain/normalizers/normalizeExerciseOrders.test.ts
 import { describe, it, expect } from "vitest";
 import { normalizeExerciseOrders } from "./normalizeExerciseOrders";
 import type {

@@ -1,4 +1,3 @@
-// src/domain/normalizers/normalizeWeightOrders.test.ts
 import { describe, it, expect } from "vitest";
 import { normalizeWeightOrders } from "./normalizeWeightOrders";
 import type { DailyRecordAggregate, WeightRecord } from "../type";
