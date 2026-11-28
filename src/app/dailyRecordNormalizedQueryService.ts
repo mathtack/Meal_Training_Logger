@@ -1,8 +1,5 @@
 import { supabase } from "../lib/supabaseClient";
-import type { ISODate, DailyRecordSummary } from "../domain/type";
-import type {
-  SupabaseReadResult, SupabaseDeleteResult, SupabaseHistoryResult,
-} from "./dailyRecordSupabaseService";
+import type { ISODate, DailyRecordAggregate, DailyRecordSummary } from "../domain/type";
 import {
   mapNormalizedDailyRecord, mapNormalizedHistoryRow, isNormalizedDeletedRow,
 } from "./dailyRecordNormalizedReadMapper";
@@ -24,7 +21,15 @@ const AGGREGATE_SELECT = `
 `;
 
 type RecordParams = { userId: string; date: ISODate };
-const errorResult = (error: unknown): { status: "error"; message: string } => ({
+type ErrorResult = { status: "error"; message: string };
+type SupabaseReadResult =
+  | { status: "found"; record: DailyRecordAggregate }
+  | { status: "not_found" }
+  | ErrorResult;
+type SupabaseHistoryResult = { status: "success"; entries: DailyRecordSummary[] } | ErrorResult;
+type SupabaseDeleteResult = { status: "deleted" } | { status: "not_found" } | ErrorResult;
+
+const errorResult = (error: unknown): ErrorResult => ({
   status: "error",
   message: error instanceof Error ? error.message : "Unknown Supabase error.",
 });

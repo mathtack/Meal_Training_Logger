@@ -22,8 +22,8 @@
 
 - `npm run build`: PASS
 - `TZ=Asia/Tokyo npm test -- --run`: PASS
-  - 17 test files
-  - 126 tests passed
+  - 16 test files
+  - 106 tests passed
 - `npm run deps:circular`: PASS
   - 0 circular
 - `npm run lint`: FAIL
@@ -43,7 +43,7 @@
 
 ## Current runtime facts
 
-- Vercel本番は `VITE_DAILY_RECORD_PERSISTENCE=normalized` でビルドした版を使用する。後続の本番ビルドも同じ設定を指定する。
+- Vercel 本番は正規化版を使用する。以前の世代を再ビルドする際の設定は [本番運用](../00_docs/product_operations.md#アプリ切り戻しと-db-異常) を参照する。
 - Supabase本番は `20261125212008_retire_jsonb_runtime.sql` を適用済みで、DB書込モードは `normalized`。DailyRecordは正規化テーブルに保存する。旧JSONBの自動更新とブラウザ向けAPI権限は退役済み。
 - 本番の `public.daily_record_store` は空の旧テーブル。運用は正規化版を対象とする。
 - ログイン済みユーザーの save / load / history / delete は Supabase基準。

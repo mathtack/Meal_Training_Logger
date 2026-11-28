@@ -2,12 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { DailyRecordAggregate, ISODate } from "../domain/type";
 import {
   createEmptyCloudDailyRecord,
-  prepareDailyRecordForCloudSave,
+  normalizeCloudDailyRecord,
 } from "./dailyRecordCloud";
 
 const USER_ID = "user-1";
 const DATE = "2026-09-03" as ISODate;
-const SAVED_AT = "2026-09-03T12:34:56.000Z";
 
 const createRecord = (): DailyRecordAggregate => ({
   daily_record: {
@@ -51,14 +50,13 @@ describe("dailyRecordCloud", () => {
     expect(record.weights).toEqual([]);
   });
 
-  it("normalizes and stamps the aggregate before a confirmed cloud save", () => {
+  it("normalizes the aggregate and applies the cloud identity before saving", () => {
     const source = createRecord();
 
-    const prepared = prepareDailyRecordForCloudSave({
+    const prepared = normalizeCloudDailyRecord({
       record: source,
       userId: USER_ID,
       date: DATE,
-      savedAt: SAVED_AT,
     });
 
     expect(prepared.daily_record).toMatchObject({
@@ -66,7 +64,7 @@ describe("dailyRecordCloud", () => {
       user_id: USER_ID,
       record_date: DATE,
       created_at: "2026-09-02T00:00:00.000Z",
-      updated_at: SAVED_AT,
+      updated_at: "2026-09-02T01:00:00.000Z",
     });
     expect(prepared.weights.map((weight) => weight.measurement_order)).toEqual([
       0,

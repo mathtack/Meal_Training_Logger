@@ -23,4 +23,4 @@
 
 ## S-02 日次記録の永続化
 
-[永続化経路](../src/app/dailyRecordPersistence.ts) がビルド設定に応じて処理を選択する。[保存前の正規化](../src/app/dailyRecordCloud.ts)、[正規化保存](../src/app/dailyRecordNormalizedWriteService.ts)、[正規化読込・履歴・削除](../src/app/dailyRecordNormalizedQueryService.ts) が実装入口。[永続化の仕様](../docs/database.md#current-persistence-model)、[現行環境](../docs/current-state.md#current-runtime-facts)、[保存テスト](../src/app/dailyRecordNormalizedWriteService.test.ts)、[クエリテスト](../src/app/dailyRecordNormalizedQueryService.test.ts)、[所有者分離の手動ケース](../docs/system-test.md#4-rls) を参照する。
+[永続化経路](../src/app/dailyRecordPersistence.ts) は正規化 Supabase サービスを使用する。[保存前の正規化](../src/app/dailyRecordCloud.ts)、[正規化保存](../src/app/dailyRecordNormalizedWriteService.ts)、[正規化読込・履歴・削除](../src/app/dailyRecordNormalizedQueryService.ts) が実装入口。[永続化の仕様](../docs/database.md#current-persistence-model)、[現行環境](../docs/current-state.md#current-runtime-facts)、[保存テスト](../src/app/dailyRecordNormalizedWriteService.test.ts)、[クエリテスト](../src/app/dailyRecordNormalizedQueryService.test.ts)、[所有者分離の手動ケース](../docs/system-test.md#4-rls) を参照する。

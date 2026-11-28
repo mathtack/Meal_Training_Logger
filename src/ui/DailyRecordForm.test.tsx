@@ -10,31 +10,20 @@ const mocks = vi.hoisted(() => ({
   fetchHistory: vi.fn(),
   saveRecord: vi.fn(),
   deleteRecord: vi.fn(),
-  readNormalized: vi.fn(),
-  historyNormalized: vi.fn(),
-  saveNormalized: vi.fn(),
-  deleteNormalized: vi.fn(),
 }));
 
 vi.mock("../features/auth/AuthContext", () => ({
   useAuth: mocks.useAuth,
 }));
 
-vi.mock("../app/dailyRecordSupabaseService", () => ({
-  fetchDailyRecordFromSupabase: mocks.fetchRecord,
-  fetchDailyRecordHistoryFromSupabase: mocks.fetchHistory,
-  saveDailyRecordToSupabase: mocks.saveRecord,
-  deleteDailyRecordFromSupabase: mocks.deleteRecord,
-}));
-
 vi.mock("../app/dailyRecordNormalizedQueryService", () => ({
-  fetchDailyRecordNormalized: mocks.readNormalized,
-  fetchDailyRecordHistoryNormalized: mocks.historyNormalized,
-  deleteDailyRecordNormalized: mocks.deleteNormalized,
+  fetchDailyRecordNormalized: mocks.fetchRecord,
+  fetchDailyRecordHistoryNormalized: mocks.fetchHistory,
+  deleteDailyRecordNormalized: mocks.deleteRecord,
 }));
 
 vi.mock("../app/dailyRecordNormalizedWriteService", () => ({
-  saveDailyRecordNormalized: mocks.saveNormalized,
+  saveDailyRecordNormalized: mocks.saveRecord,
 }));
 
 vi.mock("./exercise/ExerciseSessionsEditor", () => ({
@@ -132,7 +121,10 @@ describe("DailyRecordForm cloud persistence routing", () => {
       record: createRecord(date),
     }));
     mocks.fetchHistory.mockResolvedValue({ status: "success", entries: [] });
-    mocks.saveRecord.mockResolvedValue({ status: "saved" });
+    mocks.saveRecord.mockImplementation(async ({ record }: { record: DailyRecordAggregate }) => ({
+      status: "saved",
+      identity: record.daily_record,
+    }));
     mocks.deleteRecord.mockResolvedValue({ status: "deleted" });
     vi.spyOn(window, "confirm").mockReturnValue(true);
     localStorage.clear();
@@ -141,36 +133,28 @@ describe("DailyRecordForm cloud persistence routing", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
-    vi.unstubAllEnvs();
   });
 
-  it("uses the selected normalized path and adopts the database save identity", async () => {
-    vi.stubEnv("VITE_DAILY_RECORD_PERSISTENCE", "normalized");
+  it("adopts the database identity returned by the normalized save", async () => {
     const date = today();
     const record = createRecord(date);
     const dbTimestamp = "2026-11-06T00:03:04+00:00";
-    mocks.readNormalized.mockResolvedValue({ status: "found", record });
-    mocks.historyNormalized.mockResolvedValue({ status: "success", entries: [] });
-    mocks.saveNormalized.mockResolvedValue({ status: "saved", identity: { ...record.daily_record, updated_at: dbTimestamp } });
+    mocks.fetchRecord.mockResolvedValue({ status: "found", record });
+    mocks.saveRecord.mockResolvedValue({ status: "saved", identity: { ...record.daily_record, updated_at: dbTimestamp } });
     render(<DailyRecordForm />);
     const button = await screen.findByRole("button", { name: "保存" });
     await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(button);
     await screen.findByText("クラウドへ保存しました。");
     expect(screen.getByTestId("record-updated").textContent).toBe(dbTimestamp);
-    expect(mocks.readNormalized).toHaveBeenCalledWith({ userId: USER_ID, date });
-    expect(mocks.historyNormalized).toHaveBeenCalledWith({ userId: USER_ID });
-    expect(mocks.fetchRecord).not.toHaveBeenCalled();
-    expect(mocks.saveRecord).not.toHaveBeenCalled();
+    expect(mocks.fetchRecord).toHaveBeenCalledWith({ userId: USER_ID, date });
+    expect(mocks.fetchHistory).toHaveBeenCalledWith({ userId: USER_ID });
   });
 
-  it("reports normalized read failure without loading JSONB", async () => {
-    vi.stubEnv("VITE_DAILY_RECORD_PERSISTENCE", "normalized");
-    mocks.readNormalized.mockResolvedValue({ status: "error", message: "normalized unavailable" });
-    mocks.historyNormalized.mockResolvedValue({ status: "success", entries: [] });
+  it("reports normalized read failure and disables save", async () => {
+    mocks.fetchRecord.mockResolvedValue({ status: "error", message: "normalized unavailable" });
     render(<DailyRecordForm />);
     await screen.findByText(/normalized unavailable/);
-    expect(mocks.fetchRecord).not.toHaveBeenCalled();
     expect((screen.getByRole("button", { name: "保存" }) as HTMLButtonElement).disabled).toBe(true);
   });
 

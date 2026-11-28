@@ -6,7 +6,7 @@ import type {
   ISODate,
 } from "../domain/type";
 import { createEmptyCloudDailyRecord } from "../app/dailyRecordCloud";
-import { getDailyRecordPersistence } from "../app/dailyRecordPersistence";
+import { dailyRecordPersistence as persistence } from "../app/dailyRecordPersistence";
 import { ExerciseSessionsEditor } from "./exercise/ExerciseSessionsEditor";
 import { WeightEditor } from "./weights/WeightEditor";
 import { WellnessEditor } from "./wellness/WellnessEditor";
@@ -124,7 +124,6 @@ function CloudPersistenceNotice({ message }: { message: string }) {
 }
 
 function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
-  const persistence = getDailyRecordPersistence();
   const initialDate = useRef<ISODate>(todayISODate()).current;
   const [recordDate, setRecordDate] = useState<ISODate>(initialDate);
   const [tab, setTab] = useState<TabKey>("exercise"); // 最優先が運動なのでここから
@@ -331,7 +330,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [historyReloadVersion, persistence, userId]);
+  }, [historyReloadVersion, userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -382,7 +381,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [persistence, recordDate, recordReloadVersion, userId]);
+  }, [recordDate, recordReloadVersion, userId]);
 
   // タブ切替時：該当セクションの先頭入力にフォーカス
   useEffect(() => {

@@ -25,7 +25,7 @@ Git、Node.js、npm を用意し、[現行環境](docs/current-state.md) でバ�
 npm ci
 ```
 
-[環境設定例](.env.example) をもとに、利用が許可された環境の値を `.env.local` に設定する。正規化経路を使う場合は `VITE_DAILY_RECORD_PERSISTENCE=normalized` を指定する。
+[環境設定例](.env.example) をもとに、利用が許可された環境の値を `.env.local` に設定する。
 
 ```powershell
 npm run dev

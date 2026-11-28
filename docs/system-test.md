@@ -11,7 +11,7 @@
 
 ## Preconditions
 
-- ローカルで実行する場合、`.env.local` に `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_DAILY_RECORD_PERSISTENCE=normalized` が設定されている。
+- ローカルで実行する場合、`.env.local` に `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` が設定されている。
 - Supabase の正規化テーブル、所有者RLS、保存・削除RPCが利用可能。
 - Auth と `app_user` に登録済みで、現在ログイン可能な受入テスト用メールアドレスを利用できる。
 - PC browser と smartphone browser、または独立した2ブラウザを利用できる。
