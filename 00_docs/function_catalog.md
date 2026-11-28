@@ -19,7 +19,7 @@
 
 ## S-01 認証
 
-[認証 UI](../src/features/auth/AuthPanel.tsx) と [AuthContext](../src/features/auth/AuthContext.tsx) が Supabase Auth のサインイン、セッション、サインアウトを扱う。[認証とクライアントの責務](../docs/architecture.md#auth--external-client)、[認証の手動ケース](../docs/system-test.md#1-authentication)、[フォームの認証境界テスト](../src/ui/DailyRecordForm.test.tsx) を参照する。
+メールログイン、セッション、日次フォームの認証境界と検証先は [S-01 認証仕様](../20_module/S-01_auth/spec.md) を参照する。
 
 ## S-02 日次記録の永続化
 

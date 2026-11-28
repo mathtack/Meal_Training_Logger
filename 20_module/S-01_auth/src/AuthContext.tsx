@@ -1,4 +1,3 @@
-// src/features/auth/AuthContext.tsx
 import {
   createContext,
   useContext,
@@ -7,7 +6,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../../../20_module/00_common/src/lib/supabaseClient';
+import { supabase } from '../../00_common/src/lib/supabaseClient';
 
 type AuthContextValue = {
   session: Session | null;

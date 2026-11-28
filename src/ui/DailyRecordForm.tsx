@@ -12,7 +12,7 @@ import { WeightEditor } from "./weights/WeightEditor";
 import { WellnessEditor } from "./wellness/WellnessEditor";
 import { MealEditor } from "./meal/MealEditor";
 import { DailyRecordReportView } from "../../20_module/C-06_report/src/DailyRecordReportView";
-import { useAuth } from "../features/auth/AuthContext";
+import { useAuth } from "../../20_module/S-01_auth/src/AuthContext";
 
 type TabKey = "weight" | "wellness" | "meal" | "exercise";
 const TAB_ORDER: TabKey[] = ["weight", "wellness", "meal", "exercise"];

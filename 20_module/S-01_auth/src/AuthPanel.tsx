@@ -1,7 +1,6 @@
-// src/features/auth/AuthPanel.tsx
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { supabase } from '../../../20_module/00_common/src/lib/supabaseClient';
+import { supabase } from '../../00_common/src/lib/supabaseClient';
 import { useAuth } from './AuthContext';
 
 export const AuthPanel = () => {

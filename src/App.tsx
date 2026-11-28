@@ -1,6 +1,6 @@
 // src/App.tsx
 import { DailyRecordForm } from "./ui/DailyRecordForm";
-import { AuthPanel } from './features/auth/AuthPanel';
+import { AuthPanel } from '../20_module/S-01_auth/src/AuthPanel';
 
 export default function App() {
   return (

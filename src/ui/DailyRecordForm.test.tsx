@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   deleteRecord: vi.fn(),
 }));
 
-vi.mock("../features/auth/AuthContext", () => ({
+vi.mock("../../20_module/S-01_auth/src/AuthContext", () => ({
   useAuth: mocks.useAuth,
 }));
 

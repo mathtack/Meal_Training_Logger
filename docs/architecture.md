@@ -10,7 +10,6 @@
 ```text
 src/
   app/        application service / Supabase persistence
-  features/   cross-cutting feature such as auth
   legacy/     explicit read-only input for future migration
   ui/         DailyRecord input UI and editors
   App.tsx     application composition
@@ -18,6 +17,7 @@ src/
 20_module/
   00_common/   shared data contract, helpers, client and test fixtures
   C-06_report/  report specification, implementation and tests
+  S-01_auth/    authentication specification and implementation
 ```
 
 主要フロー:
@@ -50,7 +50,7 @@ Supabase の正規化永続化の入口は `src/app/dailyRecordPersistence.ts`�
 
 ### Auth / external client
 
-Auth は `src/features/auth/`、Supabase client 初期化は [共用クライアント](../20_module/00_common/src/lib/supabaseClient.ts) が担当する。
+Auth は [S-01](../20_module/S-01_auth/spec.md)、Supabase client 初期化は [共用クライアント](../20_module/00_common/src/lib/supabaseClient.ts) が担当する。
 
 ### Legacy input
 
