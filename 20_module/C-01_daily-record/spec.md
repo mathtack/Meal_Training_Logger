@@ -6,4 +6,4 @@
 - 編集と項目クリアはフォームの状態から始まり、保存が成功すると保存済み状態とクラウド履歴を更新する。履歴から日付を読込・削除できる。通信に失敗した場合はその操作のエラーを表示する。
 - レポート表示・コピーは [C-06](../C-06_report/spec.md)、クラウドの保存・読込・履歴・削除は [S-02](../S-02_daily-record-persistence/spec.md) が担当する。
 
-フォームの認証・編集タブ・エラーと保存の契約は [自動テスト](src/DailyRecordForm.test.tsx)、編集値の保存と復元は [システムテスト](../../docs/system-test.md#2-dailyrecord-crud) で確認する。
+フォームの認証・編集タブ・エラーと保存の契約は [自動テスト](src/DailyRecordForm.test.tsx)、体重欄の確定・下書きと再読込／クリア／保存競合は [体重編集テスト](src/weights/WeightEditor.test.tsx)、編集値の保存と復元は [システムテスト](../../docs/system-test.md#2-dailyrecord-crud) で確認する。

@@ -1,4 +1,3 @@
-﻿// src/ui/DailyRecordForm.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type {
   DailyRecordAggregate,
@@ -12,7 +11,7 @@ import { WeightEditor } from "./weights/WeightEditor";
 import { WellnessEditor } from "./wellness/WellnessEditor";
 import { MealEditor } from "./meal/MealEditor";
 import { DailyRecordReportView } from "../../C-06_report/src/DailyRecordReportView";
-import { useAuth } from "../../S-01_auth/src/AuthContext";
+import { useAuth } from "../../S-01_auth/src/useAuth";
 
 type TabKey = "weight" | "wellness" | "meal" | "exercise";
 const TAB_ORDER: TabKey[] = ["weight", "wellness", "meal", "exercise"];
@@ -136,6 +135,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
   const [recordLoadError, setRecordLoadError] = useState<string>("");
   const [loadedRecordDate, setLoadedRecordDate] = useState<ISODate | null>(null);
   const [recordReloadVersion, setRecordReloadVersion] = useState(0);
+  const [weightResetVersion, setWeightResetVersion] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState<DailyRecordMode>("edit");
   const [reportTab, setReportTab] = useState<ReportTabKey>("reportView");
@@ -156,6 +156,10 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
 
     const ok = window.confirm(`${TAB_LABEL[tab]} をクリアする？（保存するまで反映されない）`);
     if (!ok) return;
+
+    if (tab === "weight") {
+      setWeightResetVersion((version) => version + 1);
+    }
 
     setRecord((prev) => {
       if (!prev) return prev;
@@ -284,6 +288,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
         setLoadedRecordDate(date);
         setRecordLoadState("ready");
         setRecordLoadError("");
+        setWeightResetVersion((version) => version + 1);
       }
 
       setStatus(
@@ -552,6 +557,7 @@ function AuthenticatedDailyRecordForm({ userId }: { userId: string }) {
               isRecordReady ? <>
                 {tab === "weight" && (
                   <WeightSection
+                    key={`${recordDate}-${recordReloadVersion}-${weightResetVersion}`}
                     record={record}
                     setRecord={setRecord}
                     firstFocusRef={registerFirstFocus("weight")}

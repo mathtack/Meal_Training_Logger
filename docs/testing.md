@@ -14,7 +14,9 @@
 - legacy `daily_record:*` reader の対象選別・診断・read-only 保証
 - offline legacy inventoryの原本digest / owner確認 / canonical比較 / conflict・quarantine境界（手順: `docs/legacy-inventory.md`）
 - Supabase persistence service contract / query / error handling
+- AuthProvider / useAuth のセッション復元・認証状態更新・購読解除
 - DailyRecordForm の認証 gate / cloud save・load・history・delete routing / localStorage 非依存
+- WeightEditor の確定値・下書き分離 / 正規化・IME・時刻往復・クリア／再読込／保存競合の境界
 - cloud 保存前の aggregate 正規化 / ownership / timestamp
 - normalized query serviceのHTTP request / result contract / history pagination
 - normalized read mapperの全階層order / nullable draft / ownership / parent / union検証
@@ -66,7 +68,9 @@ npm run lint
 - build を壊さない
 - tests を壊さない
 - circular dependency を発生させない
-- lint error を `docs/current-state.md` の baseline から増やさない
+- lint error 0件
+
+現在の基準は build・JST 全テスト合格、17ファイル／115テスト、循環依存0件、lint 0件。固定 offset の出力を比較するテストはタイムゾーンに依存するため、Windows を含めてテスト前に `TZ=Asia/Tokyo` を指定する。
 
 ## Manual system test
 
@@ -85,6 +89,5 @@ Supabase Auth / CRUD / RLS / multi-device など、browser と実環境を必要
 - test case を version 別 folder に複製しない。
 - 自動テストは対応する実装のそばに置く。
 - 手動 E2E / system test の SSOT は `docs/system-test.md`。
-- 現在有効な品質 baseline と環境固有の実行制約は `docs/current-state.md` に置く。
 - task固有の検証結果・FAIL・再開条件はGitHub Issueへ記録し、この文書へ進捗として蓄積しない。
 - 完了済み・廃止済み test plan は Git history に任せる。

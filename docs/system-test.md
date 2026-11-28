@@ -17,7 +17,7 @@
 - PC browser と smartphone browser、または独立した2ブラウザを利用できる。
 - RLS 確認用に必要であれば2ユーザーを用意する。
 
-DailyRecordの永続化操作にはログインが必要。正規化テーブルを保存先とする。旧localStorageデータの扱いは [現行環境](current-state.md) を参照する。
+DailyRecordの永続化操作にはログインが必要。正規化テーブルを保存先とする。旧localStorageデータの扱いは [旧 localStorage の扱い](architecture.md#legacy-input) を参照する。
 Supabase client は起動時に初期化されるため、未ログイン表示の確認時も環境変数は必要。
 
 ## 0. Persistence routing

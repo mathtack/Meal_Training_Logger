@@ -10,7 +10,7 @@
 | 全体構造とデータ保存 | [アーキテクチャ](docs/architecture.md)・[DB 契約](docs/database.md) |
 | テストと実機確認 | [テスト方針](docs/testing.md)・[システムテスト](docs/system-test.md) |
 | 作業を開始・再開する | [AGENTS.md](AGENTS.md)・[開発標準](00_docs/development_standard.md) |
-| 現在の環境・品質 baseline | [現行環境](docs/current-state.md) |
+| 開発環境・品質基準 | [開発環境](00_docs/development_standard.md#作業環境の再現)・[品質ゲート](docs/testing.md#quality-gate) |
 | 本番配信・書込停止・復旧 | [本番運用](00_docs/product_operations.md) |
 | 開発計画・承認・進捗・引き継ぎ | [GitHub Issues](https://github.com/mathtack/Meal_Training_Logger/issues) |
 | 再利用可能な Agent 手順 | [Skills](skills/README.md) |
@@ -19,7 +19,7 @@
 
 ## ローカル起動
 
-Git、Node.js、npm を用意し、[現行環境](docs/current-state.md) でバージョンと環境条件を確認する。
+Git、Node.js、npm を用意し、[作業環境](00_docs/development_standard.md#作業環境の再現) でバージョンと環境条件を確認する。
 
 ```powershell
 npm ci

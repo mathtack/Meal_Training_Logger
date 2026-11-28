@@ -1,7 +1,7 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { supabase } from '../../00_common/src/lib/supabaseClient';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth';
 
 export const AuthPanel = () => {
   const { user, isLoading } = useAuth();

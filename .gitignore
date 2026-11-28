@@ -14,6 +14,7 @@ dist-ssr
 
 # Issue work products
 /workspace/
+/.vercel/
 
 # Editor directories and files
 .vscode/*

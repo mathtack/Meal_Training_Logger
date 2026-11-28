@@ -1,20 +1,12 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../../00_common/src/lib/supabaseClient';
-
-type AuthContextValue = {
-  session: Session | null;
-  user: User | null;
-  isLoading: boolean;
-};
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+import { AuthContext } from './useAuth';
+import type { AuthContextValue } from './useAuth';
 
 type AuthProviderProps = {
   children: ReactNode;
@@ -74,12 +66,4 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextValue => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within <AuthProvider>');
-  }
-  return ctx;
 };
