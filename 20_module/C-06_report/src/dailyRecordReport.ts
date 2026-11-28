@@ -1,5 +1,4 @@
-// src/domain/report/dailyRecordReport.ts
-import { exerciseClockTime } from "../exerciseClockTime";
+import { exerciseClockTime } from "../../../src/domain/exerciseClockTime";
 import type {
   DailyRecordAggregate,
   ISODateTime,
@@ -10,7 +9,7 @@ import type {
   FoodItem,
   ExerciseItem,
   SetItem,
-} from "../type";
+} from "../../../src/domain/type";
 
 import {
   SLEEP_DURATION_LABEL,
@@ -21,7 +20,7 @@ import {
   HUNGER_LEVEL_LABEL,
   BOWEL_MOVEMENT_LABEL,
   lookupLabel,
-} from "../labels/wellnessLabels";
+} from "../../../src/domain/labels/wellnessLabels";
 
 export type ReportAudience = "chatgpt" | "dietitian" | "copilot";
 

@@ -9,13 +9,13 @@
 | 編集項目 | 実装入口 | データ | 関連する自動検証 |
 | --- | --- | --- | --- |
 | 体重 | [WeightEditor](../src/ui/weights/WeightEditor.tsx) | [WeightRecord](../src/domain/type.ts)、DB の `weight_record` | [並び順](../src/domain/normalizers/normalizeWeightOrders.test.ts) |
-| 体調 | [WellnessEditor](../src/ui/wellness/WellnessEditor.tsx)、[表示ラベル](../src/domain/labels/wellnessLabels.ts) | [WellnessRecord](../src/domain/type.ts)、DB の `wellness_record` | [正規化書込マッパー](../src/app/dailyRecordNormalizedWriteMapper.test.ts)、[レポート表示](../src/domain/report/dailyRecordReport.test.ts) |
+| 体調 | [WellnessEditor](../src/ui/wellness/WellnessEditor.tsx)、[表示ラベル](../src/domain/labels/wellnessLabels.ts) | [WellnessRecord](../src/domain/type.ts)、DB の `wellness_record` | [正規化書込マッパー](../src/app/dailyRecordNormalizedWriteMapper.test.ts)、[レポート表示](../20_module/C-06_report/src/dailyRecordReport.test.ts) |
 | 食事 | [MealEditor](../src/ui/meal/MealEditor.tsx) | [MealAggregate](../src/domain/type.ts)、食事・食品・材料・添付の [関連テーブル](../docs/database.md#normalized-schema) | [日次正規化](../src/domain/normalizers/normalizeDailyRecordAggregate.test.ts)、[正規化読込マッパー](../src/app/dailyRecordNormalizedReadMapper.test.ts) |
 | 運動 | [ExerciseSessionsEditor](../src/ui/exercise/ExerciseSessionsEditor.tsx) | [ExerciseSessionAggregate](../src/domain/type.ts)、セッション・種目・セットの [関連テーブル](../docs/database.md#normalized-schema) | [時刻](../src/domain/exerciseClockTime.test.ts)、[並び順](../src/domain/normalizers/normalizeExerciseOrders.test.ts) |
 
 ## C-06 レポート
 
-フォームからレポートを表示する入口は [DailyRecordReportView](../src/domain/report/DailyRecordReportView.tsx)。[レポート生成](../src/domain/report/dailyRecordReport.ts) が日次 aggregate を ChatGPT・栄養士・Copilot 向けのテキストに変換する。保存とクリップボードコピーの結果は画面に個別に表示する。出力ルールは [レポートテスト](../src/domain/report/dailyRecordReport.test.ts) の表示順、欠損項目、空データ、連続セットなどの実例を参照する。
+表示・生成・保存とコピーの契約、実装・テストへの入口は [C-06 レポート仕様](../20_module/C-06_report/spec.md) を参照する。
 
 ## S-01 認証
 

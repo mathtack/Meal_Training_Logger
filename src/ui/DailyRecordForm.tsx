@@ -11,7 +11,7 @@ import { ExerciseSessionsEditor } from "./exercise/ExerciseSessionsEditor";
 import { WeightEditor } from "./weights/WeightEditor";
 import { WellnessEditor } from "./wellness/WellnessEditor";
 import { MealEditor } from "./meal/MealEditor";
-import { DailyRecordReportView } from "../domain/report/DailyRecordReportView";
+import { DailyRecordReportView } from "../../20_module/C-06_report/src/DailyRecordReportView";
 import { useAuth } from "../features/auth/AuthContext";
 
 type TabKey = "weight" | "wellness" | "meal" | "exercise";

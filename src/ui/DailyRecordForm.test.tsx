@@ -69,7 +69,7 @@ vi.mock("./meal/MealEditor", () => ({
   MealEditor: () => <div>meal editor</div>,
 }));
 
-vi.mock("../domain/report/DailyRecordReportView", () => ({
+vi.mock("../../20_module/C-06_report/src/DailyRecordReportView", () => ({
   DailyRecordReportView: () => <div>report view</div>,
 }));
 

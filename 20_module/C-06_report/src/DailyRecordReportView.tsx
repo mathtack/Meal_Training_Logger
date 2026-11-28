@@ -1,10 +1,9 @@
-// src/ui/report/DailyRecordReportView.tsx
 import React, { useMemo, useState } from "react";
-import type { DailyRecordAggregate } from "../../domain/type";
+import type { DailyRecordAggregate } from "../../../src/domain/type";
 import {
   buildDailyRecordReport,
   type ReportAudience,
-} from "../../domain/report/dailyRecordReport";
+} from "./dailyRecordReport";
 
 type Props = {
   record: DailyRecordAggregate;

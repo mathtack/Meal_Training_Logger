@@ -17,6 +17,8 @@ src/
   ui/         DailyRecord input UI and editors
   App.tsx     application composition
   main.tsx    application entry
+20_module/
+  C-06_report/  report specification, implementation and tests
 ```
 
 主要フロー:
@@ -36,7 +38,7 @@ main.tsx
 ### Domain
 
 `src/domain/type.ts` の `DailyRecordAggregate` をアプリ内の1日分データ契約の基準とする。
-Domain layer は factory、normalization、report generation などアプリ固有のルールを担う。
+Domain layer は factory、normalization などアプリ固有のルールを担う。レポートの表示と生成は [C-06](../20_module/C-06_report/spec.md) が担当する。
 
 ### Application
 

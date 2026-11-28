@@ -3,7 +3,7 @@
 ## Purpose
 
 この文書は Meal & Training Logger の現行テスト方針と品質 gate を定義する。
-具体的な手動システムテストケースは `docs/system-test.md`、自動テスト実装は `src/**/*.test.ts` を正とする。
+具体的な手動システムテストケースは `docs/system-test.md` を参照する。自動テストは `src/` と `20_module/` の実装に隣接する `*.test.ts`・`*.test.tsx` を使用する。
 
 過去 version 別 Test Plan は Git history を参照し、現行 Repository に版別コピーを保持しない。
 
@@ -85,7 +85,7 @@ Supabase Auth / CRUD / RLS / multi-device など、browser と実環境を必要
 ## Rules
 
 - test case を version 別 folder に複製しない。
-- 自動テストの SSOT は `src/**/*.test.ts`。
+- 自動テストは対応する実装のそばに置く。
 - 手動 E2E / system test の SSOT は `docs/system-test.md`。
 - 現在有効な品質 baseline と環境固有の実行制約は `docs/current-state.md` に置く。
 - task固有の検証結果・FAIL・再開条件はGitHub Issueへ記録し、この文書へ進捗として蓄積しない。
