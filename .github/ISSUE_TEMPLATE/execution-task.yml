@@ -17,6 +17,14 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: primary_agent
+    attributes:
+      label: 主担当 Agent
+      description: 主担当を1名記録する。起票時に未定なら「未確定」とし、作業開始前に更新する
+    validations:
+      required: true
+
   - type: textarea
     id: objective
     attributes:
@@ -29,7 +37,9 @@ body:
     id: preconditions
     attributes:
       label: Preconditions
-      description: 着手条件、先行Issue、必要なユーザー承認
+      description: 着手条件、先行Issue、必要な承認と作業ブランチ・起点
+    validations:
+      required: true
 
   - type: textarea
     id: scope
@@ -82,9 +92,9 @@ body:
     validations:
       required: true
 
-  - type: markdown
+  - type: textarea
+    id: handoff
     attributes:
-      value: |
-        ### Completion / Handoff
-        完了時のIssueコメントには最低限、実施内容・変更ファイル・commit/branch・検証結果・未実施事項・残課題/リスク・恒久docs更新有無・次工程へ進める状態かを記録します。
-        異常停止の場合はIssueをCloseせず、停止理由・現在地・未実施事項・再開条件を記録します。
+      label: Completion / Handoff
+      description: 起票時に渡すべき条件が分かっていれば記載する。完了時は実施内容・変更ファイル・commit/branch・検証結果・未実施事項・残課題・恒久docs更新有無・再開可否をIssueに記録する
+      placeholder: 異常停止時はOpenのまま停止理由・現在地・未実施事項・再開条件を記録する。

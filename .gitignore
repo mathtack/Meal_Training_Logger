@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Issue work products
+/workspace/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
